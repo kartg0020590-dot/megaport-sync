@@ -52,15 +52,6 @@ export default function Home() {
     if (data) setMemberList(data);
   };
 
-  const selectSquad = async (squad: any) => {
-    const { data } = await supabase.from('squad_members').select('user_name, user_color').eq('squad_id', squad.id).eq('user_email', email).single();
-    if (data) { 
-      setUserName(data.user_name); 
-      setUserColor(data.user_color); // 💡 切換房間時，自動載入該房間設定的顏色
-    }
-    setCurrentSquad(squad);
-  };
-
   const fetchSelections = async () => {
     if (!currentSquad) return;
     const { data: members } = await supabase.from('squad_members').select('user_email').eq('squad_id', currentSquad.id);
@@ -71,10 +62,15 @@ export default function Home() {
     }
   };
 
+  const selectSquad = async (squad: any) => {
+    const { data } = await supabase.from('squad_members').select('user_name, user_color').eq('squad_id', squad.id).eq('user_email', email).single();
+    if (data) { setUserName(data.user_name); setUserColor(data.user_color); }
+    setCurrentSquad(squad);
+  };
+
   const handleColorChange = async (newColor: string) => {
     setUserColor(newColor);
     if (currentSquad && email) {
-      // 💡 僅更新 squad_members，確保顏色只在目前小隊生效
       await supabase.from('squad_members').update({ user_color: newColor }).eq('squad_id', currentSquad.id).eq('user_email', email);
       fetchSquadMembers();
     }
@@ -151,10 +147,10 @@ export default function Home() {
     <div className="h-screen flex flex-col items-center justify-center bg-white p-8 text-black overflow-auto font-sans">
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@900&display=swap" rel="stylesheet" />
       <h2 className="text-xl font-black mb-6 uppercase tracking-widest text-zinc-400">我的小隊清單</h2>
-      <div className="w-full max-w-xs space-y-3 mb-10">
+      <div className="w-full max-w-xs space-y-3 mb-10 text-black">
         {squads.map(s => (<button key={s.id} onClick={() => selectSquad(s)} className="w-full p-4 bg-zinc-50 border rounded-2xl font-bold text-left hover:bg-zinc-100 transition-all text-black">{s.squad_name}</button>))}
       </div>
-      <div className="w-full max-w-xs space-y-4 pt-6 border-t border-zinc-100">
+      <div className="w-full max-w-xs space-y-4 pt-6 border-t border-zinc-100 text-black">
         <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="顯示大名 (建議單個字好辨認)" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
         <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="MEGA-XXXXXX" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
         <button onClick={() => handleJoinOrCreate('join')} className="w-full bg-black text-white py-4 rounded-2xl font-black">加入現有小隊</button>
@@ -177,20 +173,26 @@ export default function Home() {
               </div>
               <span className="text-[9px] text-zinc-400 mt-1.5 font-mono">{email}</span>
             </div>
-            <button onClick={() => setShowMembers(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm">
-              <span className="text-[14px]">👥</span>
-              <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500">查看成員</span>
+            <button onClick={() => setShowMembers(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm text-black">
+              <span className="text-[12px]">👥</span>
+              <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">成員</span>
             </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1 rounded-full border border-zinc-200 shadow-sm">
-            <span className="text-[9px] font-black text-zinc-400 uppercase">挑選自己的顏色</span>
-            <input type="color" value={userColor} onChange={e => handleColorChange(e.target.value)} className="w-6 h-6 rounded-full bg-transparent cursor-pointer border-none" />
+        <div className="flex items-center gap-2">
+          <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm text-black">
+            <span className="text-[12px]">{zoom === 0.9 ? "🌍" : "🔎"}</span>
+            <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">{zoom === 0.9 ? "全覽" : "放大"}</span>
+          </button>
+
+          <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm text-black">
+            <span className="text-[8px] font-black text-zinc-400 uppercase">顏色</span>
+            <input type="color" value={userColor} onChange={e => handleColorChange(e.target.value)} className="w-5 h-5 rounded-full bg-transparent cursor-pointer border-none shadow-sm" />
           </div>
-          <div className="flex bg-zinc-100 rounded-lg p-1">
-            {['2026-03-21', '2026-03-22'].map(d => (<button key={d} onClick={() => setCurrentDate(d)} className={`px-4 py-1.5 rounded-md text-[10px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}日</button>))}
+          
+          <div className="flex bg-zinc-100 rounded-lg p-0.5">
+            {['2026-03-21', '2026-03-22'].map(d => (<button key={d} onClick={() => setCurrentDate(d)} className={`px-3 py-1.5 rounded-md text-[9px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}日</button>))}
           </div>
         </div>
       </div>
@@ -198,7 +200,7 @@ export default function Home() {
       {showMembers && (
         <>
           <div className="fixed inset-0 bg-black/60 z-[90] backdrop-blur-sm" onClick={() => setShowMembers(false)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] bg-white border-2 border-black p-6 shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] rounded-3xl w-[85%] max-w-md animate-in zoom-in-95 duration-200">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] bg-white border-2 border-black p-6 shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] rounded-3xl w-[85%] max-w-md animate-in zoom-in-95 duration-200 text-black">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-black text-sm uppercase tracking-[0.2em]">小隊成員清單 ({memberList.length})</h3>
               <button onClick={() => setShowMembers(false)} className="bg-black text-white w-8 h-8 rounded-full font-bold flex items-center justify-center">×</button>
@@ -223,22 +225,35 @@ export default function Home() {
         <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}>
           <div className="inline-grid" style={{ 
             display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, 
-            gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2320px' 
+            gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2320px',
+            backgroundColor: 'white' 
           }}>
             <div className="sticky top-0 left-0 z-50 bg-black text-white flex items-center justify-center font-black text-[42px] tracking-tighter border-b border-r border-zinc-800">{currentDate.split('-')[2]}</div>
             {Object.keys(STAGE_THEME).map((s, idx) => (
               <div key={s} className="sticky top-0 z-40 border-b border-r border-zinc-300 flex items-center justify-center font-black text-[42px] tracking-tighter uppercase leading-none bg-white text-black" style={{ gridColumnStart: idx + 2, backgroundColor: STAGE_THEME[s].bg }}>{s}</div>
             ))}
             <div className="bg-[#FFF9E1] border-b border-l border-zinc-300" style={{ gridColumnStart: 12 }}></div>
+
+            {Object.keys(STAGE_THEME).map((_, idx) => (
+              <div key={`bg-col-${idx}`} className={`pointer-events-none z-0 border-r border-zinc-300 ${idx % 2 === 0 ? 'bg-zinc-200' : 'bg-white'}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60' }}></div>
+            ))}
+
             {Array.from({ length: 58 }).map((_, i) => {
-              const time = `${12 + Math.floor((30 + i * 10) / 60)}:${(30 + i * 10) % 60 === 0 ? '00' : (30 + i * 10) % 60}`;
+              const minutes = (12 * 60 + 30 + i * 10);
+              const hour = Math.floor(minutes / 60);
+              const min = minutes % 60;
+              const timeStr = `${hour}:${min === 0 ? '00' : min}`;
+              const isHourMark = (minutes % 60 === 0);
+
               return (
-                <div key={i} className="contents text-[24px] font-mono font-bold text-zinc-500">
-                  <div className="sticky left-0 z-40 bg-[#FFF9E1] flex items-center justify-center border-r border-b border-zinc-300 translate-y-[-50%]" style={{ gridRowStart: i + 2 }}>{time}</div>
-                  <div className="bg-[#FFF9E1] flex items-center justify-center border-l border-b border-zinc-300 translate-y-[-50%]" style={{ gridRowStart: i + 2, gridColumnStart: 12 }}>{time}</div>
+                <div key={`grid-row-${i}`} className="contents">
+                  <div className="sticky left-0 z-40 bg-[#FFF9E1] flex items-center justify-center border-r border-b border-zinc-400 translate-y-[-50%] text-[24px] font-mono font-bold text-zinc-500" style={{ gridRowStart: i + 2 }}>{timeStr}</div>
+                  <div className="bg-[#FFF9E1] flex items-center justify-center border-l border-b border-zinc-400 translate-y-[-50%] text-[24px] font-mono font-bold text-zinc-500" style={{ gridRowStart: i + 2, gridColumnStart: 12 }}>{timeStr}</div>
+                  <div className={`pointer-events-none z-10 ${isHourMark ? 'border-b-[4px] border-zinc-500' : 'border-b border-zinc-300'}`} style={{ gridRowStart: i + 2, gridColumn: '2 / 12' }}></div>
                 </div>
               )
             })}
+
             {Object.keys(STAGE_THEME).map((stage, colIndex) => {
               const shows = (festivalData as any)[currentDate]?.[stage] || [];
               return shows.map((show: any) => {
@@ -249,11 +264,23 @@ export default function Home() {
                 const baseApparentSize = isOverview ? 14 : 24; 
                 const physicalSize = baseApparentSize / zoom; 
                 return (
-                  <div key={show.id} onClick={() => handleToggle(show)} className={`mx-[1px] my-[1px] flex flex-col items-center justify-center text-center cursor-pointer relative z-30 transition-all ${isMe ? 'ring-[6px] ring-[#E85427] ring-inset shadow-2xl scale-[1.01]' : 'border-transparent'}`} style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: STAGE_THEME[stage].bg }}>
-                    <p className="font-black tracking-tighter text-black text-[36px] leading-[1.3] p-2 pointer-events-none whitespace-pre-line">{show.artist}</p>
+                  <div 
+                    key={show.id} 
+                    onClick={() => handleToggle(show)} 
+                    className={`mx-[1px] my-[1px] flex flex-col items-center justify-center text-center cursor-pointer relative z-30 transition-all ${isMe ? 'shadow-2xl scale-[1.01]' : 'border-transparent'}`} 
+                    style={{ 
+                      gridRow: `${startRow} / ${endRow}`, 
+                      gridColumnStart: colIndex + 2, 
+                      // 💡 關鍵：選中時背景變橘色 (#E85427)
+                      backgroundColor: isMe ? '#E85427' : STAGE_THEME[stage].bg 
+                    }}
+                  >
+                    {/* 💡 關鍵：選中時文字變白色 */}
+                    <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 pointer-events-none whitespace-pre-line ${isMe ? 'text-white' : 'text-black'}`}>
+                      {show.artist}
+                    </p>
                     <div className={`absolute bottom-1 left-2 max-w-[90%] flex flex-row pointer-events-none overflow-hidden ${isOverview ? '-space-x-3' : '-space-x-1.5'}`}>
                       {attendees.map((f, i) => {
-                        // 💡 關鍵：從當前房間的 memberList 查找該帳號設定的顏色，而不是從 selections 表抓
                         const memberInfo = memberList.find(m => m.user_email === f.user_email);
                         const displayColor = memberInfo?.user_color || '#000000';
                         return (
@@ -267,11 +294,6 @@ export default function Home() {
             })}
           </div>
         </div>
-      </div>
-      <div className="fixed bottom-8 right-8 z-[100]">
-        <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="bg-[#E85427] text-white px-8 py-5 rounded-full font-black shadow-2xl border-4 border-white text-lg active:scale-95 transition-all">
-          {zoom === 0.9 ? "🔎 放大" : "🌍 縮小"}
-        </button>
       </div>
     </main>
   );
