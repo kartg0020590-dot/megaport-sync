@@ -33,6 +33,10 @@ export default function Home() {
     setMounted(true);
     const savedEmail = localStorage.getItem('megaport_email');
     const savedSquadId = localStorage.getItem('megaport_squad_id');
+    // 💡 修正 1：讀取上次儲存的日期
+    const savedDate = localStorage.getItem('megaport_current_date');
+    
+    if (savedDate) setCurrentDate(savedDate);
     if (savedEmail) { 
       setEmail(savedEmail); 
       fetchMySquads(savedEmail, savedSquadId); 
@@ -206,7 +210,13 @@ export default function Home() {
             <input type="color" value={userColor} onChange={e => handleColorChange(e.target.value)} className="w-5 h-5 rounded-full bg-transparent cursor-pointer border-none shadow-sm" />
           </div>
           <div className="flex bg-zinc-100 rounded-lg p-0.5">
-            {['2026-03-21', '2026-03-22'].map(d => (<button key={d} onClick={() => setCurrentDate(d)} className={`px-3 py-1.5 rounded-md text-[9px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}日</button>))}
+            {['2026-03-21', '2026-03-22'].map(d => (
+              <button key={d} onClick={() => {
+                // 💡 修正 2：切換日期時同步儲存至 localStorage
+                setCurrentDate(d);
+                localStorage.setItem('megaport_current_date', d);
+              }} className={`px-3 py-1.5 rounded-md text-[9px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}日</button>
+            ))}
           </div>
         </div>
       </div>
@@ -255,7 +265,7 @@ export default function Home() {
               const hour = Math.floor(minutes / 60);
               const min = minutes % 60;
               const timeStr = `${hour}:${min === 0 ? '00' : min}`;
-              // 💡 關鍵修復：判斷「下一格」是否為整點，如果是，這格底部就畫粗黑線
+              // 💡 修正 3：對齊整點黑線
               const isNextHourMark = ((minutes + 10) % 60 === 0);
 
               return (
