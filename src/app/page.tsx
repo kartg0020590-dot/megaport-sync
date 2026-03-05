@@ -23,7 +23,9 @@ export default function Home() {
   const [inviteCode, setInviteCode] = useState('');
   const [allSelections, setAllSelections] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState('2026-03-21');
-  const [zoom, setZoom] = useState(0.9); 
+  
+  // 💡 修正 1：預設進去就是「全覽模式」 (0.28)
+  const [zoom, setZoom] = useState(0.28); 
   const [showMembers, setShowMembers] = useState(false); 
   const [memberList, setMemberList] = useState<any[]>([]);
 
@@ -32,16 +34,31 @@ export default function Home() {
   useEffect(() => {
     setMounted(true);
     const savedEmail = localStorage.getItem('megaport_email');
-    if (savedEmail) { setEmail(savedEmail); fetchMySquads(savedEmail); }
+    const savedSquadId = localStorage.getItem('megaport_squad_id');
+    
+    if (savedEmail) { 
+      setEmail(savedEmail); 
+      // 💡 修正 2：如果存有小隊 ID，傳給 fetchMySquads 自動進入
+      fetchMySquads(savedEmail, savedSquadId); 
+    }
   }, []);
 
   useEffect(() => { 
     if (currentSquad) { fetchSelections(); fetchSquadMembers(); } 
   }, [currentSquad, currentDate]);
 
-  const fetchMySquads = async (e: string) => {
+  const fetchMySquads = async (e: string, autoSelectId?: string | null) => {
     const { data } = await supabase.from('squad_members').select('squads(*)').eq('user_email', e);
-    if (data) setSquads(data.map(i => i.squads));
+    if (data) {
+      const squadList = data.map(i => i.squads);
+      setSquads(squadList);
+
+      // 💡 自動進入邏輯：在小隊清單中比對 ID
+      if (autoSelectId) {
+        const targetSquad = squadList.find(s => String(s.id) === String(autoSelectId));
+        if (targetSquad) selectSquad(targetSquad);
+      }
+    }
     localStorage.setItem('megaport_email', e);
     setIsLogin(true);
   };
@@ -65,6 +82,9 @@ export default function Home() {
   const selectSquad = async (squad: any) => {
     const { data } = await supabase.from('squad_members').select('user_name, user_color').eq('squad_id', squad.id).eq('user_email', email).single();
     if (data) { setUserName(data.user_name); setUserColor(data.user_color); }
+    
+    // 💡 紀錄當前小隊 ID
+    localStorage.setItem('megaport_squad_id', squad.id);
     setCurrentSquad(squad);
   };
 
@@ -115,6 +135,8 @@ export default function Home() {
   const handleLeaveSquad = async () => {
     if (!confirm(`確定要退出「${currentSquad.squad_name}」嗎？`)) return;
     await supabase.from('squad_members').delete().eq('squad_id', currentSquad.id).eq('user_email', email);
+    // 💡 退出時清除記憶
+    localStorage.removeItem('megaport_squad_id');
     setCurrentSquad(null); setShowMembers(false); fetchMySquads(email);
   };
 
@@ -164,29 +186,33 @@ export default function Home() {
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@900&display=swap" rel="stylesheet" />
       
       <div className="p-4 bg-white border-b border-zinc-300 flex justify-between items-center z-50 shrink-0 shadow-sm">
-        <div className="flex flex-col text-left leading-none">
+        <div className="flex flex-col text-left leading-none text-black">
           <div className="flex items-center gap-2">
-            <div className="flex flex-col cursor-pointer" onClick={() => setCurrentSquad(null)}>
+            <div className="flex flex-col cursor-pointer" onClick={() => {
+              // 💡 點擊標題回清單時，清除自動登入記憶，方便切換小隊
+              localStorage.removeItem('megaport_squad_id');
+              setCurrentSquad(null);
+            }}>
                <div className="flex items-baseline gap-1.5 group">
                 <span className="font-black text-xs uppercase group-hover:text-[#E85427] transition-colors">{currentSquad.squad_name}</span>
                 <span className="text-[10px] font-bold text-[#E85427] bg-[#E85427]/10 px-1.5 py-0.5 rounded uppercase tracking-tighter">{currentSquad.invite_code}</span>
               </div>
               <span className="text-[9px] text-zinc-400 mt-1.5 font-mono">{email}</span>
             </div>
-            <button onClick={() => setShowMembers(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm text-black">
+            <button onClick={() => setShowMembers(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm">
               <span className="text-[12px]">👥</span>
               <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">成員</span>
             </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm text-black">
+        <div className="flex items-center gap-2 text-black">
+          <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm">
             <span className="text-[12px]">{zoom === 0.9 ? "🌍" : "🔎"}</span>
             <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">{zoom === 0.9 ? "全覽" : "放大"}</span>
           </button>
 
-          <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm text-black">
+          <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm">
             <span className="text-[8px] font-black text-zinc-400 uppercase">顏色</span>
             <input type="color" value={userColor} onChange={e => handleColorChange(e.target.value)} className="w-5 h-5 rounded-full bg-transparent cursor-pointer border-none shadow-sm" />
           </div>
@@ -200,14 +226,14 @@ export default function Home() {
       {showMembers && (
         <>
           <div className="fixed inset-0 bg-black/60 z-[90] backdrop-blur-sm" onClick={() => setShowMembers(false)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] bg-white border-2 border-black p-6 shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] rounded-3xl w-[85%] max-w-md animate-in zoom-in-95 duration-200 text-black">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] bg-white border-2 border-black p-6 shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] rounded-3xl w-[85%] max-w-md animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-black text-sm uppercase tracking-[0.2em]">小隊成員清單 ({memberList.length})</h3>
+              <h3 className="font-black text-sm uppercase tracking-[0.2em] text-black">小隊成員清單 ({memberList.length})</h3>
               <button onClick={() => setShowMembers(false)} className="bg-black text-white w-8 h-8 rounded-full font-bold flex items-center justify-center">×</button>
             </div>
             <div className="space-y-4 max-h-[40vh] overflow-auto mb-8 pr-2">
               {memberList.map((m, i) => (
-                <div key={i} className="flex items-center gap-4 border-b border-zinc-100 pb-3">
+                <div key={i} className="flex items-center gap-4 border-b border-zinc-100 pb-3 text-black">
                   <div className="w-8 h-8 rounded-full border-2 border-black shadow-sm" style={{ backgroundColor: m.user_color }}></div>
                   <div className="flex flex-col">
                     <span className="text-sm font-black italic">{m.user_name}</span>
@@ -264,21 +290,8 @@ export default function Home() {
                 const baseApparentSize = isOverview ? 14 : 24; 
                 const physicalSize = baseApparentSize / zoom; 
                 return (
-                  <div 
-                    key={show.id} 
-                    onClick={() => handleToggle(show)} 
-                    className={`mx-[1px] my-[1px] flex flex-col items-center justify-center text-center cursor-pointer relative z-30 transition-all ${isMe ? 'shadow-2xl scale-[1.01]' : 'border-transparent'}`} 
-                    style={{ 
-                      gridRow: `${startRow} / ${endRow}`, 
-                      gridColumnStart: colIndex + 2, 
-                      // 💡 關鍵：選中時背景變橘色 (#E85427)
-                      backgroundColor: isMe ? '#E85427' : STAGE_THEME[stage].bg 
-                    }}
-                  >
-                    {/* 💡 關鍵：選中時文字變白色 */}
-                    <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 pointer-events-none whitespace-pre-line ${isMe ? 'text-white' : 'text-black'}`}>
-                      {show.artist}
-                    </p>
+                  <div key={show.id} onClick={() => handleToggle(show)} className={`mx-[1px] my-[1px] flex flex-col items-center justify-center text-center cursor-pointer relative z-30 transition-all ${isMe ? 'shadow-2xl scale-[1.01]' : 'border-transparent'}`} style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: isMe ? '#E85427' : STAGE_THEME[stage].bg }}>
+                    <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 pointer-events-none whitespace-pre-line ${isMe ? 'text-white' : 'text-black'}`}>{show.artist}</p>
                     <div className={`absolute bottom-1 left-2 max-w-[90%] flex flex-row pointer-events-none overflow-hidden ${isOverview ? '-space-x-3' : '-space-x-1.5'}`}>
                       {attendees.map((f, i) => {
                         const memberInfo = memberList.find(m => m.user_email === f.user_email);
