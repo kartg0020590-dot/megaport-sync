@@ -24,7 +24,7 @@ export default function Home() {
   const [allSelections, setAllSelections] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState('2026-03-21');
   
-  // 💡 修正 1：預設進去就是「全覽模式」 (0.28)
+  // 💡 核心：預設全覽模式 (0.28)
   const [zoom, setZoom] = useState(0.28); 
   const [showMembers, setShowMembers] = useState(false); 
   const [memberList, setMemberList] = useState<any[]>([]);
@@ -38,7 +38,7 @@ export default function Home() {
     
     if (savedEmail) { 
       setEmail(savedEmail); 
-      // 💡 修正 2：如果存有小隊 ID，傳給 fetchMySquads 自動進入
+      // 💡 核心：如果存有小隊 ID，自動進入
       fetchMySquads(savedEmail, savedSquadId); 
     }
   }, []);
@@ -53,7 +53,6 @@ export default function Home() {
       const squadList = data.map(i => i.squads);
       setSquads(squadList);
 
-      // 💡 自動進入邏輯：在小隊清單中比對 ID
       if (autoSelectId) {
         const targetSquad = squadList.find(s => String(s.id) === String(autoSelectId));
         if (targetSquad) selectSquad(targetSquad);
@@ -83,7 +82,7 @@ export default function Home() {
     const { data } = await supabase.from('squad_members').select('user_name, user_color').eq('squad_id', squad.id).eq('user_email', email).single();
     if (data) { setUserName(data.user_name); setUserColor(data.user_color); }
     
-    // 💡 紀錄當前小隊 ID
+    // 💡 核心：紀錄當前小隊 ID 以便下次自動進入
     localStorage.setItem('megaport_squad_id', squad.id);
     setCurrentSquad(squad);
   };
@@ -135,7 +134,6 @@ export default function Home() {
   const handleLeaveSquad = async () => {
     if (!confirm(`確定要退出「${currentSquad.squad_name}」嗎？`)) return;
     await supabase.from('squad_members').delete().eq('squad_id', currentSquad.id).eq('user_email', email);
-    // 💡 退出時清除記憶
     localStorage.removeItem('megaport_squad_id');
     setCurrentSquad(null); setShowMembers(false); fetchMySquads(email);
   };
@@ -185,11 +183,10 @@ export default function Home() {
     <main className="h-screen flex flex-col bg-white overflow-hidden text-black font-sans relative" style={{ fontFamily: '"Noto Sans TC", sans-serif' }}>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@900&display=swap" rel="stylesheet" />
       
-      <div className="p-4 bg-white border-b border-zinc-300 flex justify-between items-center z-50 shrink-0 shadow-sm">
-        <div className="flex flex-col text-left leading-none text-black">
+      <div className="p-4 bg-white border-b border-zinc-300 flex justify-between items-center z-50 shrink-0 shadow-sm text-black">
+        <div className="flex flex-col text-left leading-none">
           <div className="flex items-center gap-2">
             <div className="flex flex-col cursor-pointer" onClick={() => {
-              // 💡 點擊標題回清單時，清除自動登入記憶，方便切換小隊
               localStorage.removeItem('megaport_squad_id');
               setCurrentSquad(null);
             }}>
@@ -206,13 +203,13 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-black">
-          <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm text-black">
             <span className="text-[12px]">{zoom === 0.9 ? "🌍" : "🔎"}</span>
             <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">{zoom === 0.9 ? "全覽" : "放大"}</span>
           </button>
 
-          <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm">
+          <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm text-black">
             <span className="text-[8px] font-black text-zinc-400 uppercase">顏色</span>
             <input type="color" value={userColor} onChange={e => handleColorChange(e.target.value)} className="w-5 h-5 rounded-full bg-transparent cursor-pointer border-none shadow-sm" />
           </div>
