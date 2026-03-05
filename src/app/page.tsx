@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import festivalData from '../../data.json'
 import { supabase } from '@/lib/supabaseClient'
 
-// 莫蘭迪低飽和配色系統
 const STAGE_THEME: Record<string, { bg: string, text: string }> = {
   '南霸天': { bg: '#C5D8A4', text: '#000000' }, '海龍王': { bg: '#BDBEDD', text: '#000000' },
   '女神龍': { bg: '#E5B6CD', text: '#000000' }, '海波浪': { bg: '#AFDCE6', text: '#000000' },
@@ -113,8 +112,8 @@ export default function Home() {
         {squads.map(s => (<button key={s.id} onClick={() => selectSquad(s)} className="w-full p-4 bg-zinc-50 border rounded-2xl font-bold text-left hover:bg-zinc-100 transition-all text-black">{s.squad_name}</button>))}
       </div>
       <div className="w-full max-w-xs space-y-4 pt-6 border-t border-zinc-100">
-        <input type="text" value={userName} onChange={setUserName(e.target.value)} placeholder="顯示大名" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
-        <input type="text" value={inviteCode} onChange={setInviteCode(e.target.value)} placeholder="輸入 6 位邀請碼" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
+        <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="顯示大名" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
+        <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="輸入 6 位邀請碼" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
         <button onClick={() => handleJoinOrCreate('join')} className="w-full bg-black text-white py-4 rounded-2xl font-black">加入現有小隊</button>
         <button onClick={() => handleJoinOrCreate('create')} className="w-full text-zinc-400 text-xs underline font-bold mt-2">建立新小隊</button>
       </div>
@@ -153,17 +152,13 @@ export default function Home() {
             gridTemplateRows: `80px repeat(57, 45px)`, 
             minWidth: '2320px' 
           }}>
-            
             <div className="sticky top-0 left-0 z-50 bg-black text-white flex items-center justify-center font-black text-[42px] tracking-tighter border-b border-r border-zinc-800">
               {currentDate.split('-')[2]}
             </div>
-
             {Object.keys(STAGE_THEME).map((s, idx) => (
               <div key={s} className="sticky top-0 z-40 border-b border-r border-zinc-300 flex items-center justify-center font-black text-[42px] tracking-tighter uppercase leading-none bg-white text-black" style={{ gridColumnStart: idx + 2, backgroundColor: STAGE_THEME[s].bg }}>{s}</div>
             ))}
             <div className="bg-[#F4F4F4] border-b border-l border-zinc-300" style={{ gridColumnStart: 12 }}></div>
-
-            {/* 💡 時間文字向上偏移半格 (22.5px) */}
             {Array.from({ length: 58 }).map((_, i) => {
               const time = `${12 + Math.floor((30 + i * 10) / 60)}:${(30 + i * 10) % 60 === 0 ? '00' : (30 + i * 10) % 60}`;
               return (
@@ -173,9 +168,7 @@ export default function Home() {
                 </div>
               )
             })}
-
             {Object.keys(STAGE_THEME).map((_, idx) => (<div key={`bg-${idx}`} className={`border-r border-zinc-300 pointer-events-none z-0 ${idx % 2 === 0 ? 'bg-zinc-300' : 'bg-white'}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60' }}></div>))}
-            
             {Array.from({ length: 58 }).map((_, i) => {
               const minutes = (12 * 60 + 30 + i * 10);
               const isHourMark = (minutes % 60 === 50); 
@@ -183,7 +176,6 @@ export default function Home() {
                 <div key={`line-${i}`} className={`pointer-events-none z-10 ${isHourMark ? 'border-b-[1.5px] border-black' : 'border-b border-zinc-400/30'}`} style={{ gridRowStart: i + 2, gridColumn: '2 / 12' }}></div>
               );
             })}
-
             {Object.keys(STAGE_THEME).map((stage, colIndex) => {
               const shows = festivalData[currentDate]?.[stage] || [];
               return shows.map(show => {
@@ -191,10 +183,8 @@ export default function Home() {
                 const isMe = attendees.some(a => String(a.user_email) === String(email));
                 const startRow = Math.floor(((Number(show.start.split(':')[0]) * 60 + Number(show.start.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
                 const endRow = Math.floor(((Number(show.end.split(':')[0]) * 60 + Number(show.end.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
-
                 const baseApparentSize = isOverview ? 14 : 24; 
                 const physicalSize = baseApparentSize / zoom; 
-
                 return (
                   <div key={show.id} onClick={() => handleToggle(show)} className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative z-30 transition-all ${isMe ? 'ring-[6px] ring-[#E85427] ring-inset shadow-2xl scale-[1.01]' : 'border-transparent'}`} style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: STAGE_THEME[stage].bg }}>
                     <p className="font-black tracking-tighter text-black text-[36px] leading-[0.9] p-2 pointer-events-none whitespace-pre-line">
@@ -212,7 +202,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
       <div className="fixed bottom-8 right-8 z-[100]">
         <button onClick={() => setZoom(zoom === 1 ? 0.31 : 1)} className="bg-[#E85427] text-white px-8 py-5 rounded-full font-black shadow-2xl border-4 border-white text-lg active:scale-95 transition-all">
           {zoom === 1 ? "🌍 一鍵全覽" : "🔎 細節模式"}
