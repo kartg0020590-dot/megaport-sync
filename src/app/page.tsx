@@ -33,7 +33,6 @@ export default function Home() {
     setMounted(true);
     const savedEmail = localStorage.getItem('megaport_email');
     const savedSquadId = localStorage.getItem('megaport_squad_id');
-    
     if (savedEmail) { 
       setEmail(savedEmail); 
       fetchMySquads(savedEmail, savedSquadId); 
@@ -49,9 +48,7 @@ export default function Home() {
     if (data) {
       const squadList = data.map(i => i.squads);
       setSquads(squadList);
-
       if (autoSelectId) {
-        // 💡 關鍵修復：加入 (s: any) 來避開 Vercel 的類型檢查
         const targetSquad = squadList.find((s: any) => String(s.id) === String(autoSelectId));
         if (targetSquad) selectSquad(targetSquad);
       }
@@ -204,12 +201,10 @@ export default function Home() {
             <span className="text-[12px]">{zoom === 0.9 ? "🌍" : "🔎"}</span>
             <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">{zoom === 0.9 ? "全覽" : "放大"}</span>
           </button>
-
           <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm text-black">
             <span className="text-[8px] font-black text-zinc-400 uppercase">顏色</span>
             <input type="color" value={userColor} onChange={e => handleColorChange(e.target.value)} className="w-5 h-5 rounded-full bg-transparent cursor-pointer border-none shadow-sm" />
           </div>
-          
           <div className="flex bg-zinc-100 rounded-lg p-0.5">
             {['2026-03-21', '2026-03-22'].map(d => (<button key={d} onClick={() => setCurrentDate(d)} className={`px-3 py-1.5 rounded-md text-[9px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}日</button>))}
           </div>
@@ -252,27 +247,25 @@ export default function Home() {
               <div key={s} className="sticky top-0 z-40 border-b border-r border-zinc-300 flex items-center justify-center font-black text-[42px] tracking-tighter uppercase leading-none bg-white text-black" style={{ gridColumnStart: idx + 2, backgroundColor: STAGE_THEME[s].bg }}>{s}</div>
             ))}
             <div className="bg-[#FFF9E1] border-b border-l border-zinc-300" style={{ gridColumnStart: 12 }}></div>
-
             {Object.keys(STAGE_THEME).map((_, idx) => (
               <div key={`bg-col-${idx}`} className={`pointer-events-none z-0 border-r border-zinc-300 ${idx % 2 === 0 ? 'bg-zinc-200' : 'bg-white'}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60' }}></div>
             ))}
-
             {Array.from({ length: 58 }).map((_, i) => {
               const minutes = (12 * 60 + 30 + i * 10);
               const hour = Math.floor(minutes / 60);
               const min = minutes % 60;
               const timeStr = `${hour}:${min === 0 ? '00' : min}`;
-              const isHourMark = (minutes % 60 === 0);
+              // 💡 關鍵修復：判斷「下一格」是否為整點，如果是，這格底部就畫粗黑線
+              const isNextHourMark = ((minutes + 10) % 60 === 0);
 
               return (
                 <div key={`grid-row-${i}`} className="contents">
                   <div className="sticky left-0 z-40 bg-[#FFF9E1] flex items-center justify-center border-r border-b border-zinc-400 translate-y-[-50%] text-[24px] font-mono font-bold text-zinc-500" style={{ gridRowStart: i + 2 }}>{timeStr}</div>
                   <div className="bg-[#FFF9E1] flex items-center justify-center border-l border-b border-zinc-400 translate-y-[-50%] text-[24px] font-mono font-bold text-zinc-500" style={{ gridRowStart: i + 2, gridColumnStart: 12 }}>{timeStr}</div>
-                  <div className={`pointer-events-none z-10 ${isHourMark ? 'border-b-[4px] border-zinc-500' : 'border-b border-zinc-300'}`} style={{ gridRowStart: i + 2, gridColumn: '2 / 12' }}></div>
+                  <div className={`pointer-events-none z-10 ${isNextHourMark ? 'border-b-[4px] border-zinc-500' : 'border-b border-zinc-300'}`} style={{ gridRowStart: i + 2, gridColumn: '2 / 12' }}></div>
                 </div>
               )
             })}
-
             {Object.keys(STAGE_THEME).map((stage, colIndex) => {
               const shows = (festivalData as any)[currentDate]?.[stage] || [];
               return shows.map((show: any) => {
