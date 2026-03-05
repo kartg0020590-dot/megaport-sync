@@ -23,8 +23,6 @@ export default function Home() {
   const [inviteCode, setInviteCode] = useState('');
   const [allSelections, setAllSelections] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState('2026-03-21');
-  
-  // 💡 核心：預設全覽模式 (0.28)
   const [zoom, setZoom] = useState(0.28); 
   const [showMembers, setShowMembers] = useState(false); 
   const [memberList, setMemberList] = useState<any[]>([]);
@@ -38,7 +36,6 @@ export default function Home() {
     
     if (savedEmail) { 
       setEmail(savedEmail); 
-      // 💡 核心：如果存有小隊 ID，自動進入
       fetchMySquads(savedEmail, savedSquadId); 
     }
   }, []);
@@ -54,7 +51,8 @@ export default function Home() {
       setSquads(squadList);
 
       if (autoSelectId) {
-        const targetSquad = squadList.find(s => String(s.id) === String(autoSelectId));
+        // 💡 關鍵修復：加入 (s: any) 來避開 Vercel 的類型檢查
+        const targetSquad = squadList.find((s: any) => String(s.id) === String(autoSelectId));
         if (targetSquad) selectSquad(targetSquad);
       }
     }
@@ -81,8 +79,6 @@ export default function Home() {
   const selectSquad = async (squad: any) => {
     const { data } = await supabase.from('squad_members').select('user_name, user_color').eq('squad_id', squad.id).eq('user_email', email).single();
     if (data) { setUserName(data.user_name); setUserColor(data.user_color); }
-    
-    // 💡 核心：紀錄當前小隊 ID 以便下次自動進入
     localStorage.setItem('megaport_squad_id', squad.id);
     setCurrentSquad(squad);
   };
