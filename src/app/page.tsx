@@ -23,7 +23,9 @@ export default function Home() {
   const [inviteCode, setInviteCode] = useState('');
   const [allSelections, setAllSelections] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState('2026-03-21');
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(0.9); 
+  const [showMembers, setShowMembers] = useState(false); 
+  const [memberList, setMemberList] = useState<any[]>([]);
 
   const isOverview = zoom < 0.5;
 
@@ -33,13 +35,21 @@ export default function Home() {
     if (savedEmail) { setEmail(savedEmail); fetchMySquads(savedEmail); }
   }, []);
 
-  useEffect(() => { if (currentSquad) fetchSelections(); }, [currentSquad, currentDate]);
+  useEffect(() => { 
+    if (currentSquad) { fetchSelections(); fetchSquadMembers(); } 
+  }, [currentSquad, currentDate]);
 
   const fetchMySquads = async (e: string) => {
     const { data } = await supabase.from('squad_members').select('squads(*)').eq('user_email', e);
     if (data) setSquads(data.map(i => i.squads));
     localStorage.setItem('megaport_email', e);
     setIsLogin(true);
+  };
+
+  const fetchSquadMembers = async () => {
+    if (!currentSquad) return;
+    const { data } = await supabase.from('squad_members').select('user_email, user_name, user_color').eq('squad_id', currentSquad.id);
+    if (data) setMemberList(data);
   };
 
   const selectSquad = async (squad: any) => {
@@ -57,7 +67,17 @@ export default function Home() {
     setUserColor(newColor);
     if (currentSquad && email) {
       await supabase.from('squad_members').update({ user_color: newColor }).eq('squad_id', currentSquad.id).eq('user_email', email);
+      fetchSquadMembers();
     }
+  };
+
+  const handleLogin = () => {
+    const accountRegex = /^[a-zA-Z0-9]{8,}$/;
+    if (!accountRegex.test(email)) {
+      alert("帳號格式錯誤：請輸入至少 8 位英文字母或數字");
+      return;
+    }
+    fetchMySquads(email);
   };
 
   const handleJoinOrCreate = async (mode: 'join' | 'create') => {
@@ -71,7 +91,13 @@ export default function Home() {
     } else {
       const sName = prompt('新小隊名稱：');
       if (!sName) return;
-      const code = `MEGA-${Math.floor(100000 + Math.random() * 900000)}`;
+      let isUnique = false;
+      let code = '';
+      while (!isUnique) {
+        code = `MEGA-${Math.floor(100000 + Math.random() * 900000)}`;
+        const { data } = await supabase.from('squads').select('id').eq('invite_code', code).single();
+        if (!data) isUnique = true;
+      }
       const { data: ns } = await supabase.from('squads').insert([{ squad_name: sName, invite_code: code }]).select().single();
       if (ns) {
         alert(`建立成功！邀請碼：${code}`);
@@ -79,6 +105,15 @@ export default function Home() {
         fetchMySquads(email); selectSquad(ns);
       }
     }
+  };
+
+  const handleLeaveSquad = async () => {
+    if (!confirm(`確定要退出「${currentSquad.squad_name}」嗎？`)) return;
+    await supabase.from('squad_members').delete().eq('squad_id', currentSquad.id).eq('user_email', email);
+    await supabase.from('user_selections').delete().eq('squad_id', currentSquad.id).eq('user_email', email);
+    setCurrentSquad(null);
+    setShowMembers(false);
+    fetchMySquads(email);
   };
 
   const handleToggle = async (show: any) => {
@@ -99,21 +134,23 @@ export default function Home() {
 
   if (!isLogin) return (
     <div className="h-screen flex flex-col items-center justify-center bg-white p-8 text-black font-sans">
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@900&display=swap" rel="stylesheet" />
       <h1 className="text-4xl font-black italic mb-10 underline decoration-[#E85427]">MEGAPORT SYNC</h1>
-      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="輸入 Email 帳號" className="w-full max-w-xs p-4 border-2 border-zinc-100 rounded-2xl font-bold mb-4 outline-none text-black" />
-      <button onClick={() => email && fetchMySquads(email)} className="w-full max-w-xs bg-black text-white py-4 rounded-2xl font-black shadow-lg">進入系統</button>
+      <input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="輸入帳號 (登入帳號：至少 8 位英數字)" className="w-full max-w-xs p-4 border-2 border-zinc-100 rounded-2xl font-bold mb-4 outline-none text-black" />
+      <button onClick={handleLogin} className="w-full max-w-xs bg-black text-white py-4 rounded-2xl font-black shadow-lg">進入系統</button>
     </div>
   );
 
   if (!currentSquad) return (
-    <div className="h-screen flex flex-col items-center justify-center bg-white p-8 text-black overflow-auto">
+    <div className="h-screen flex flex-col items-center justify-center bg-white p-8 text-black overflow-auto font-sans">
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@900&display=swap" rel="stylesheet" />
       <h2 className="text-xl font-black mb-6 uppercase tracking-widest text-zinc-400">我的小隊清單</h2>
       <div className="w-full max-w-xs space-y-3 mb-10">
         {squads.map(s => (<button key={s.id} onClick={() => selectSquad(s)} className="w-full p-4 bg-zinc-50 border rounded-2xl font-bold text-left hover:bg-zinc-100 transition-all text-black">{s.squad_name}</button>))}
       </div>
       <div className="w-full max-w-xs space-y-4 pt-6 border-t border-zinc-100">
-        <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="顯示大名" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
-        <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="輸入 6 位邀請碼" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
+        <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="顯示大名 (建議單個字好辨認)" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
+        <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="MEGA-XXXXXX" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
         <button onClick={() => handleJoinOrCreate('join')} className="w-full bg-black text-white py-4 rounded-2xl font-black">加入現有小隊</button>
         <button onClick={() => handleJoinOrCreate('create')} className="w-full text-zinc-400 text-xs underline font-bold mt-2">建立新小隊</button>
       </div>
@@ -121,21 +158,29 @@ export default function Home() {
   );
 
   return (
-    <main className="h-screen flex flex-col bg-white overflow-hidden text-black font-sans">
+    <main className="h-screen flex flex-col bg-white overflow-hidden text-black font-sans relative" style={{ fontFamily: '"Noto Sans TC", sans-serif' }}>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@900&display=swap" rel="stylesheet" />
+      
       <div className="p-4 bg-white border-b border-zinc-300 flex justify-between items-center z-50 shrink-0 shadow-sm">
-        <div className="flex flex-col text-left leading-none" onClick={() => setCurrentSquad(null)}>
-          <div className="flex items-baseline gap-1.5 cursor-pointer group">
-            <span className="font-black text-xs uppercase group-hover:text-[#E85427] transition-colors">{currentSquad.squad_name}</span>
-            <span className="text-[10px] font-bold text-[#E85427] bg-[#E85427]/10 px-1.5 py-0.5 rounded uppercase tracking-tighter">
-              {currentSquad.invite_code}
-            </span>
-            <span className="text-[10px] text-zinc-300 group-hover:text-zinc-500">▾</span>
+        <div className="flex flex-col text-left leading-none">
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col cursor-pointer" onClick={() => setCurrentSquad(null)}>
+               <div className="flex items-baseline gap-1.5 group">
+                <span className="font-black text-xs uppercase group-hover:text-[#E85427] transition-colors">{currentSquad.squad_name}</span>
+                <span className="text-[10px] font-bold text-[#E85427] bg-[#E85427]/10 px-1.5 py-0.5 rounded uppercase tracking-tighter">{currentSquad.invite_code}</span>
+              </div>
+              <span className="text-[9px] text-zinc-400 mt-1.5 font-mono">{email}</span>
+            </div>
+            <button onClick={() => setShowMembers(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all">
+              <span className="text-[14px]">👥</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500">查看成員</span>
+            </button>
           </div>
-          <span className="text-[9px] text-zinc-400 mt-1.5 font-mono">{email}</span>
         </div>
+
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1 rounded-full border border-zinc-200">
-            <span className="text-[9px] font-black text-zinc-400">COLOR</span>
+            <span className="text-[9px] font-black text-zinc-400 uppercase">挑選自己的顏色</span>
             <input type="color" value={userColor} onChange={e => handleColorChange(e.target.value)} className="w-6 h-6 rounded-full bg-transparent cursor-pointer border-none" />
           </div>
           <div className="flex bg-zinc-100 rounded-lg p-1">
@@ -143,6 +188,32 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {showMembers && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-[90] backdrop-blur-sm" onClick={() => setShowMembers(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] bg-white border-2 border-black p-6 shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] rounded-3xl w-[85%] max-w-md animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-black text-sm uppercase tracking-[0.2em]">小隊成員清單 ({memberList.length})</h3>
+              <button onClick={() => setShowMembers(false)} className="bg-black text-white w-8 h-8 rounded-full font-bold flex items-center justify-center">×</button>
+            </div>
+            <div className="space-y-4 max-h-[40vh] overflow-auto mb-8 pr-2 custom-scrollbar">
+              {memberList.map((m, i) => (
+                <div key={i} className="flex items-center gap-4 border-b border-zinc-100 pb-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-black" style={{ backgroundColor: m.user_color }}></div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-black italic">{m.user_name}</span>
+                    <span className="text-[11px] text-zinc-400 font-mono tracking-tight">{m.user_email}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button onClick={handleLeaveSquad} className="w-full py-4 bg-red-500 text-white text-[12px] font-black rounded-2xl hover:bg-red-600 transition-all uppercase tracking-widest shadow-lg">
+              退出這個小隊
+            </button>
+          </div>
+        </>
+      )}
 
       <div className="flex-1 overflow-auto relative bg-white">
         <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}>
@@ -158,13 +229,13 @@ export default function Home() {
             {Object.keys(STAGE_THEME).map((s, idx) => (
               <div key={s} className="sticky top-0 z-40 border-b border-r border-zinc-300 flex items-center justify-center font-black text-[42px] tracking-tighter uppercase leading-none bg-white text-black" style={{ gridColumnStart: idx + 2, backgroundColor: STAGE_THEME[s].bg }}>{s}</div>
             ))}
-            <div className="bg-[#F4F4F4] border-b border-l border-zinc-300" style={{ gridColumnStart: 12 }}></div>
+            <div className="bg-[#FFF9E1] border-b border-l border-zinc-300" style={{ gridColumnStart: 12 }}></div>
             {Array.from({ length: 58 }).map((_, i) => {
               const time = `${12 + Math.floor((30 + i * 10) / 60)}:${(30 + i * 10) % 60 === 0 ? '00' : (30 + i * 10) % 60}`;
               return (
                 <div key={i} className="contents text-[24px] font-mono font-bold text-zinc-500">
-                  <div className="sticky left-0 z-40 bg-[#F4F4F4] flex items-center justify-center border-r border-b border-zinc-300 translate-y-[-50%]" style={{ gridRowStart: i + 2 }}>{time}</div>
-                  <div className="bg-[#F4F4F4] flex items-center justify-center border-l border-b border-zinc-300 translate-y-[-50%]" style={{ gridRowStart: i + 2, gridColumnStart: 12 }}>{time}</div>
+                  <div className="sticky left-0 z-40 bg-[#FFF9E1] flex items-center justify-center border-r border-b border-zinc-300 translate-y-[-50%]" style={{ gridRowStart: i + 2 }}>{time}</div>
+                  <div className="bg-[#FFF9E1] flex items-center justify-center border-l border-b border-zinc-300 translate-y-[-50%]" style={{ gridRowStart: i + 2, gridColumnStart: 12 }}>{time}</div>
                 </div>
               )
             })}
@@ -177,7 +248,6 @@ export default function Home() {
               );
             })}
             {Object.keys(STAGE_THEME).map((stage, colIndex) => {
-              // 💡 關鍵修正：將 festivalData 斷言為 any 繞過嚴格的索引檢查
               const shows = (festivalData as any)[currentDate]?.[stage] || [];
               return shows.map((show: any) => {
                 const attendees = allSelections.filter(s => String(s.performance_id) === String(show.id));
@@ -187,13 +257,15 @@ export default function Home() {
                 const baseApparentSize = isOverview ? 14 : 24; 
                 const physicalSize = baseApparentSize / zoom; 
                 return (
-                  <div key={show.id} onClick={() => handleToggle(show)} className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative z-30 transition-all ${isMe ? 'ring-[6px] ring-[#E85427] ring-inset shadow-2xl scale-[1.01]' : 'border-transparent'}`} style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: STAGE_THEME[stage].bg }}>
-                    <p className="font-black tracking-tighter text-black text-[36px] leading-[0.9] p-2 pointer-events-none whitespace-pre-line">
+                  <div key={show.id} onClick={() => handleToggle(show)} className={`mx-[1px] my-[1px] flex flex-col items-center justify-center text-center cursor-pointer relative z-30 transition-all ${isMe ? 'ring-[6px] ring-[#E85427] ring-inset shadow-2xl scale-[1.01]' : 'border-transparent'}`} style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: STAGE_THEME[stage].bg }}>
+                    <p className="font-black tracking-tighter text-black text-[36px] leading-[1.3] p-2 pointer-events-none whitespace-pre-line">
                       {show.artist}
                     </p>
-                    <div className="absolute bottom-1 left-1 flex flex-row -space-x-1 pointer-events-none">
+                    
+                    {/* 💡 核心修改：動態判斷堆疊緊密度 */}
+                    <div className={`absolute bottom-1 left-2 max-w-[90%] flex flex-row pointer-events-none overflow-hidden ${isOverview ? '-space-x-3' : '-space-x-1.5'}`}>
                       {attendees.map((f, i) => (
-                        <div key={i} className="rounded-full flex items-center justify-center font-black text-white border border-black shadow-sm" style={{ backgroundColor: f.user_color || '#000', width: `${physicalSize}px`, height: `${physicalSize}px`, fontSize: `${physicalSize * 0.45}px`, borderWidth: isOverview ? '0.7px' : '1px' }}>{f.user_name?.charAt(0).toUpperCase()}</div>
+                        <div key={i} className="rounded-full flex items-center justify-center font-black text-white border border-black shadow-sm" style={{ backgroundColor: f.user_color || '#000', width: `${physicalSize}px`, height: `${physicalSize}px`, fontSize: `${physicalSize * 0.45}px`, borderWidth: isOverview ? '0.7px' : '1px', zIndex: attendees.length - i }}>{f.user_name?.charAt(0).toUpperCase()}</div>
                       ))}
                     </div>
                   </div>
@@ -204,8 +276,8 @@ export default function Home() {
         </div>
       </div>
       <div className="fixed bottom-8 right-8 z-[100]">
-        <button onClick={() => setZoom(zoom === 1 ? 0.31 : 1)} className="bg-[#E85427] text-white px-8 py-5 rounded-full font-black shadow-2xl border-4 border-white text-lg active:scale-95 transition-all">
-          {zoom === 1 ? "🌍 一鍵全覽" : "🔎 細節模式"}
+        <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="bg-[#E85427] text-white px-8 py-5 rounded-full font-black shadow-2xl border-4 border-white text-lg active:scale-95 transition-all">
+          {zoom === 0.9 ? "🔎 放大" : "🌍 縮小"}
         </button>
       </div>
     </main>
