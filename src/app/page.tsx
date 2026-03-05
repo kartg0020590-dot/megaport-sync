@@ -177,8 +177,9 @@ export default function Home() {
               );
             })}
             {Object.keys(STAGE_THEME).map((stage, colIndex) => {
-              const shows = festivalData[currentDate]?.[stage] || [];
-              return shows.map(show => {
+              // 💡 關鍵修正：將 festivalData 斷言為 any 繞過嚴格的索引檢查
+              const shows = (festivalData as any)[currentDate]?.[stage] || [];
+              return shows.map((show: any) => {
                 const attendees = allSelections.filter(s => String(s.performance_id) === String(show.id));
                 const isMe = attendees.some(a => String(a.user_email) === String(email));
                 const startRow = Math.floor(((Number(show.start.split(':')[0]) * 60 + Number(show.start.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
