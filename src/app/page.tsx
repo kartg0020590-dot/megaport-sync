@@ -54,18 +54,27 @@ export default function Home() {
 
   const selectSquad = async (squad: any) => {
     const { data } = await supabase.from('squad_members').select('user_name, user_color').eq('squad_id', squad.id).eq('user_email', email).single();
-    if (data) { setUserName(data.user_name); setUserColor(data.user_color); }
+    if (data) { 
+      setUserName(data.user_name); 
+      setUserColor(data.user_color); // 💡 切換房間時，自動載入該房間設定的顏色
+    }
     setCurrentSquad(squad);
   };
 
   const fetchSelections = async () => {
-    const { data } = await supabase.from('user_selections').select('*').eq('squad_id', currentSquad.id);
-    if (data) setAllSelections(data);
+    if (!currentSquad) return;
+    const { data: members } = await supabase.from('squad_members').select('user_email').eq('squad_id', currentSquad.id);
+    if (members) {
+      const emails = members.map(m => m.user_email);
+      const { data: selections } = await supabase.from('user_selections').select('*').in('user_email', emails);
+      if (selections) setAllSelections(selections);
+    }
   };
 
   const handleColorChange = async (newColor: string) => {
     setUserColor(newColor);
     if (currentSquad && email) {
+      // 💡 僅更新 squad_members，確保顏色只在目前小隊生效
       await supabase.from('squad_members').update({ user_color: newColor }).eq('squad_id', currentSquad.id).eq('user_email', email);
       fetchSquadMembers();
     }
@@ -74,7 +83,7 @@ export default function Home() {
   const handleLogin = () => {
     const accountRegex = /^[a-zA-Z0-9]{8,}$/;
     if (!accountRegex.test(email)) {
-      alert("帳號格式錯誤：請輸入至少 8 位英文字母或數字");
+      alert("帳號格式錯誤：請輸入至少 8 位英數字組合");
       return;
     }
     fetchMySquads(email);
@@ -110,21 +119,18 @@ export default function Home() {
   const handleLeaveSquad = async () => {
     if (!confirm(`確定要退出「${currentSquad.squad_name}」嗎？`)) return;
     await supabase.from('squad_members').delete().eq('squad_id', currentSquad.id).eq('user_email', email);
-    await supabase.from('user_selections').delete().eq('squad_id', currentSquad.id).eq('user_email', email);
-    setCurrentSquad(null);
-    setShowMembers(false);
-    fetchMySquads(email);
+    setCurrentSquad(null); setShowMembers(false); fetchMySquads(email);
   };
 
   const handleToggle = async (show: any) => {
-    if (!email || !currentSquad) return;
+    if (!email) return;
     const mine = allSelections.find(s => s.user_email === email && String(s.performance_id) === String(show.id));
     if (mine) {
       await supabase.from('user_selections').delete().eq('id', mine.id);
     } else {
       await supabase.from('user_selections').insert([{ 
-        user_email: email, user_name: userName, squad_id: currentSquad.id, 
-        performance_id: String(show.id), artist_name: show.artist, user_color: userColor 
+        user_email: email, user_name: userName, 
+        performance_id: String(show.id), artist_name: show.artist
       }]);
     }
     fetchSelections();
@@ -171,7 +177,7 @@ export default function Home() {
               </div>
               <span className="text-[9px] text-zinc-400 mt-1.5 font-mono">{email}</span>
             </div>
-            <button onClick={() => setShowMembers(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all">
+            <button onClick={() => setShowMembers(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm">
               <span className="text-[14px]">👥</span>
               <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500">查看成員</span>
             </button>
@@ -179,7 +185,7 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1 rounded-full border border-zinc-200">
+          <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1 rounded-full border border-zinc-200 shadow-sm">
             <span className="text-[9px] font-black text-zinc-400 uppercase">挑選自己的顏色</span>
             <input type="color" value={userColor} onChange={e => handleColorChange(e.target.value)} className="w-6 h-6 rounded-full bg-transparent cursor-pointer border-none" />
           </div>
@@ -197,10 +203,10 @@ export default function Home() {
               <h3 className="font-black text-sm uppercase tracking-[0.2em]">小隊成員清單 ({memberList.length})</h3>
               <button onClick={() => setShowMembers(false)} className="bg-black text-white w-8 h-8 rounded-full font-bold flex items-center justify-center">×</button>
             </div>
-            <div className="space-y-4 max-h-[40vh] overflow-auto mb-8 pr-2 custom-scrollbar">
+            <div className="space-y-4 max-h-[40vh] overflow-auto mb-8 pr-2">
               {memberList.map((m, i) => (
                 <div key={i} className="flex items-center gap-4 border-b border-zinc-100 pb-3">
-                  <div className="w-8 h-8 rounded-full border-2 border-black" style={{ backgroundColor: m.user_color }}></div>
+                  <div className="w-8 h-8 rounded-full border-2 border-black shadow-sm" style={{ backgroundColor: m.user_color }}></div>
                   <div className="flex flex-col">
                     <span className="text-sm font-black italic">{m.user_name}</span>
                     <span className="text-[11px] text-zinc-400 font-mono tracking-tight">{m.user_email}</span>
@@ -208,9 +214,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <button onClick={handleLeaveSquad} className="w-full py-4 bg-red-500 text-white text-[12px] font-black rounded-2xl hover:bg-red-600 transition-all uppercase tracking-widest shadow-lg">
-              退出這個小隊
-            </button>
+            <button onClick={handleLeaveSquad} className="w-full py-4 bg-red-500 text-white text-[12px] font-black rounded-2xl hover:bg-red-600 transition-all uppercase tracking-widest shadow-lg">退出這個小隊</button>
           </div>
         </>
       )}
@@ -218,14 +222,10 @@ export default function Home() {
       <div className="flex-1 overflow-auto relative bg-white">
         <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}>
           <div className="inline-grid" style={{ 
-            display: 'grid', 
-            gridTemplateColumns: `100px repeat(10, 200px) 100px`, 
-            gridTemplateRows: `80px repeat(57, 45px)`, 
-            minWidth: '2320px' 
+            display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, 
+            gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2320px' 
           }}>
-            <div className="sticky top-0 left-0 z-50 bg-black text-white flex items-center justify-center font-black text-[42px] tracking-tighter border-b border-r border-zinc-800">
-              {currentDate.split('-')[2]}
-            </div>
+            <div className="sticky top-0 left-0 z-50 bg-black text-white flex items-center justify-center font-black text-[42px] tracking-tighter border-b border-r border-zinc-800">{currentDate.split('-')[2]}</div>
             {Object.keys(STAGE_THEME).map((s, idx) => (
               <div key={s} className="sticky top-0 z-40 border-b border-r border-zinc-300 flex items-center justify-center font-black text-[42px] tracking-tighter uppercase leading-none bg-white text-black" style={{ gridColumnStart: idx + 2, backgroundColor: STAGE_THEME[s].bg }}>{s}</div>
             ))}
@@ -239,14 +239,6 @@ export default function Home() {
                 </div>
               )
             })}
-            {Object.keys(STAGE_THEME).map((_, idx) => (<div key={`bg-${idx}`} className={`border-r border-zinc-300 pointer-events-none z-0 ${idx % 2 === 0 ? 'bg-zinc-300' : 'bg-white'}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60' }}></div>))}
-            {Array.from({ length: 58 }).map((_, i) => {
-              const minutes = (12 * 60 + 30 + i * 10);
-              const isHourMark = (minutes % 60 === 50); 
-              return (
-                <div key={`line-${i}`} className={`pointer-events-none z-10 ${isHourMark ? 'border-b-[1.5px] border-black' : 'border-b border-zinc-400/30'}`} style={{ gridRowStart: i + 2, gridColumn: '2 / 12' }}></div>
-              );
-            })}
             {Object.keys(STAGE_THEME).map((stage, colIndex) => {
               const shows = (festivalData as any)[currentDate]?.[stage] || [];
               return shows.map((show: any) => {
@@ -258,15 +250,16 @@ export default function Home() {
                 const physicalSize = baseApparentSize / zoom; 
                 return (
                   <div key={show.id} onClick={() => handleToggle(show)} className={`mx-[1px] my-[1px] flex flex-col items-center justify-center text-center cursor-pointer relative z-30 transition-all ${isMe ? 'ring-[6px] ring-[#E85427] ring-inset shadow-2xl scale-[1.01]' : 'border-transparent'}`} style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: STAGE_THEME[stage].bg }}>
-                    <p className="font-black tracking-tighter text-black text-[36px] leading-[1.3] p-2 pointer-events-none whitespace-pre-line">
-                      {show.artist}
-                    </p>
-                    
-                    {/* 💡 核心修改：動態判斷堆疊緊密度 */}
+                    <p className="font-black tracking-tighter text-black text-[36px] leading-[1.3] p-2 pointer-events-none whitespace-pre-line">{show.artist}</p>
                     <div className={`absolute bottom-1 left-2 max-w-[90%] flex flex-row pointer-events-none overflow-hidden ${isOverview ? '-space-x-3' : '-space-x-1.5'}`}>
-                      {attendees.map((f, i) => (
-                        <div key={i} className="rounded-full flex items-center justify-center font-black text-white border border-black shadow-sm" style={{ backgroundColor: f.user_color || '#000', width: `${physicalSize}px`, height: `${physicalSize}px`, fontSize: `${physicalSize * 0.45}px`, borderWidth: isOverview ? '0.7px' : '1px', zIndex: attendees.length - i }}>{f.user_name?.charAt(0).toUpperCase()}</div>
-                      ))}
+                      {attendees.map((f, i) => {
+                        // 💡 關鍵：從當前房間的 memberList 查找該帳號設定的顏色，而不是從 selections 表抓
+                        const memberInfo = memberList.find(m => m.user_email === f.user_email);
+                        const displayColor = memberInfo?.user_color || '#000000';
+                        return (
+                          <div key={i} className="rounded-full flex items-center justify-center font-black text-white border border-black shadow-sm" style={{ backgroundColor: displayColor, width: `${physicalSize}px`, height: `${physicalSize}px`, fontSize: `${physicalSize * 0.45}px`, borderWidth: isOverview ? '0.7px' : '1px', zIndex: attendees.length - i }}>{f.user_name?.charAt(0).toUpperCase()}</div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
