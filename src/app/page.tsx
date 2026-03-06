@@ -171,6 +171,22 @@ export default function Home() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!confirm('🚨 確定要徹底刪除帳號嗎？\n這將移除你所有的選團紀錄且無法復原。')) return;
+    try {
+      await supabase.from('user_selections').delete().eq('user_email', email);
+      await supabase.from('squad_members').delete().eq('user_email', email);
+      localStorage.removeItem('megaport_email');
+      localStorage.removeItem('megaport_squad_id');
+      setIsLogin(false);
+      setCurrentSquad(null);
+      setEmail('');
+      setUserName('');
+      setShowMembers(false);
+      alert('帳號數據已全數清除。');
+    } catch (err) { alert('刪除失敗'); }
+  };
+
   const selectSquad = async (squad: any) => {
     const { data } = await supabase.from('squad_members').select('user_name, user_color').eq('squad_id', squad.id).eq('user_email', email).single();
     if (data) { setUserName(data.user_name); setUserColor(data.user_color); }
@@ -236,6 +252,11 @@ export default function Home() {
         <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="MEGA-XXXXXX" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
         <button onClick={() => handleJoinOrCreate('join')} className="w-full bg-black text-white py-4 rounded-2xl font-black shadow-lg">加入現有小隊</button>
         <button onClick={() => handleJoinOrCreate('create')} className="w-full text-zinc-400 text-xs underline font-bold mt-2">建立新小隊</button>
+        {/* 💡 修正：紅色刪除帳號按鈕 */}
+        <div className="pt-10">
+          <button onClick={handleDeleteAccount} className="w-full bg-red-500 text-white py-4 rounded-2xl font-black shadow-lg active:scale-95 transition-all text-xs tracking-widest">刪除帳號</button>
+          <p className="text-[8px] text-zinc-300 font-bold text-center mt-2 uppercase tracking-tighter">此操作將永久清除您的所有選團與小隊數據</p>
+        </div>
       </div>
     </div>
   );
@@ -250,33 +271,33 @@ export default function Home() {
                 <span className="font-black text-xs uppercase group-hover:text-[#E85427] transition-colors text-black">{currentSquad.squad_name}</span>
                 <span className="text-[10px] font-bold text-[#E85427] bg-[#E85427]/10 px-1.5 py-0.5 rounded tracking-tighter">{currentSquad.invite_code}</span>
               </div>
-              <span className="text-[9px] text-zinc-400 mt-1.5 font-mono text-zinc-400">{email}</span>
+              <span className="text-[9px] text-zinc-400 mt-1.5 font-mono">{email}</span>
             </div>
-            <button onClick={() => setShowMembers(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm">
+            <button onClick={() => setShowMembers(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm text-black">
               <span className="text-[12px]">👥</span>
               <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">成員</span>
             </button>
           </div>
         </div>
-
         <div className="flex items-center gap-2 text-black">
-          <div className="hidden md:flex items-center gap-1.5 bg-zinc-50 px-2.5 py-1.5 rounded-full border border-zinc-200 shadow-sm mr-1 text-black">
+          <div className="hidden md:flex items-center gap-1.5 bg-zinc-50 px-2.5 py-1.5 rounded-full border border-zinc-200 shadow-sm text-black">
             <span className="text-[8px] font-black text-zinc-400 uppercase">icon顏色:</span>
             <input type="color" value={userColor} onChange={e => handleMemberColorChange(e.target.value)} className="w-4 h-4 rounded-full bg-transparent border-none cursor-pointer" />
           </div>
-
-          {/* 💡 修正 1 & 2：手機版顯現，更名為📍地圖版 */}
-          <div className="flex items-center gap-1 bg-zinc-100 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm text-black">
-            <button onClick={() => { setWallpaperMode('generated'); setShowColorPicker(true); }} className="bg-black text-white px-2 py-1 rounded-full font-black text-[9px]">📲 人生音樂版</button>
-            <button onClick={() => { setWallpaperMode('static'); setShowContactPrompt(true); }} className="bg-[#E85427] text-white px-2 py-1 rounded-full font-black text-[9px]">📍 地圖版</button>
-          </div>
-          
-          <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="px-2.5 py-1.5 bg-zinc-100 rounded-full text-[12px] shadow-sm text-black">{zoom === 0.9 ? "🌍" : "🔎"}</button>
-          <div className="flex bg-zinc-100 rounded-lg p-0.5">
+          <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="px-3 py-1.5 bg-zinc-100 rounded-full text-[12px] shadow-sm text-black">{zoom === 0.9 ? "🌍" : "🔎"}</button>
+          <div className="flex bg-zinc-100 rounded-lg p-0.5 shadow-sm">
             {['2026-03-21', '2026-03-22'].map(d => (
-              <button key={d} onClick={() => { setCurrentDate(d); localStorage.setItem('megaport_current_date', d); }} className={`px-2 py-1.5 rounded-md text-[9px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}</button>
+              <button key={d} onClick={() => { setCurrentDate(d); localStorage.setItem('megaport_current_date', d); }} className={`px-3 py-1.5 rounded-md text-[9px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}</button>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-3 pointer-events-none">
+        <div className="bg-white/80 backdrop-blur-md p-3 rounded-3xl border border-zinc-200 shadow-2xl flex flex-col gap-2 pointer-events-auto">
+          <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest text-center border-b border-zinc-100 pb-1.5 mb-0.5">輸出桌面</span>
+          <button onClick={() => { setWallpaperMode('generated'); setShowColorPicker(true); }} className="bg-black text-white px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-lg active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap">📲 人生音樂版</button>
+          <button onClick={() => { setWallpaperMode('static'); setShowContactPrompt(true); }} className="bg-[#E85427] text-white px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-lg active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap">📍 地圖版</button>
         </div>
       </div>
 
@@ -286,16 +307,16 @@ export default function Home() {
             <h3 className="text-lg font-black uppercase tracking-tighter text-black border-b pb-4">小隊成員</h3>
             <div className="space-y-3 max-h-[40vh] overflow-auto pr-2">
               {memberList.map((m, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-zinc-50 rounded-xl border border-zinc-100 text-black">
+                <div key={i} className="flex items-center justify-between p-3 bg-zinc-50 rounded-xl border border-zinc-100">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-sm" style={{ backgroundColor: m.user_color }}>{m.user_name?.charAt(0).toUpperCase()}</div>
                     <span className="font-bold text-sm text-black">{m.user_name}</span>
                   </div>
-                  {m.user_email === email && <span className="text-[10px] font-black uppercase text-zinc-400 text-zinc-400">你</span>}
+                  {m.user_email === email && <span className="text-[10px] font-black uppercase text-zinc-400">你</span>}
                 </div>
               ))}
             </div>
-            <button onClick={() => { if(confirm('確定退出？')) { supabase.from('squad_members').delete().eq('squad_id', currentSquad.id).eq('user_email', email).then(() => { localStorage.removeItem('megaport_squad_id'); setCurrentSquad(null); setShowMembers(false); fetchMySquads(email); }); } }} className="w-full py-4 border-2 border-red-50 text-red-500 font-black rounded-2xl text-sm">退出小隊</button>
+            <button onClick={() => { if(confirm('確定退出目前小隊？')) { supabase.from('squad_members').delete().eq('squad_id', currentSquad.id).eq('user_email', email).then(() => { localStorage.removeItem('megaport_squad_id'); setCurrentSquad(null); setShowMembers(false); fetchMySquads(email); }); } }} className="w-full py-4 bg-zinc-100 text-black font-black rounded-2xl text-sm">退出目前小隊</button>
           </div>
         </div>
       )}
@@ -304,35 +325,35 @@ export default function Home() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[110] flex items-center justify-center p-6 text-black">
           <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black">
             <h3 className="text-xl font-black italic underline decoration-[#E85427] text-black">人生音樂版輸出</h3>
-            <div className="flex flex-col gap-4 w-full">
-              <div className="flex justify-between items-center w-full px-2 font-bold text-xs text-black"><span>背景色</span><input type="color" value={wallpaperBg} onChange={e => setWallpaperBg(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div>
-              <div className="flex justify-between items-center w-full px-2 font-bold text-xs text-black"><span>大字色</span><input type="color" value={wallpaperText} onChange={e => setWallpaperText(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div>
-              <div className="w-full pt-2 text-black">
+            <div className="flex flex-col gap-4 w-full text-black">
+              <div className="flex justify-between items-center w-full px-2 font-bold text-xs"><span>背景色</span><input type="color" value={wallpaperBg} onChange={e => setWallpaperBg(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div>
+              <div className="flex justify-between items-center w-full px-2 font-bold text-xs"><span>大字色</span><input type="color" value={wallpaperText} onChange={e => setWallpaperText(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div>
+              <div className="w-full pt-2">
                 <span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block">緊急聯絡電話 (選填 / 零後台)</span>
                 <input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-3 border border-zinc-100 bg-zinc-50 rounded-xl font-bold text-sm outline-none focus:border-[#E85427] text-black" />
               </div>
             </div>
-            <button onClick={() => executeDownload('generated')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-white">確認並下載</button>
-            <button onClick={() => setShowColorPicker(false)} className="text-zinc-400 font-bold text-xs text-zinc-400">取消</button>
+            <button onClick={() => executeDownload('generated')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all">確認下載</button>
+            <button onClick={() => setShowColorPicker(false)} className="text-zinc-400 font-bold text-xs">取消</button>
           </div>
         </div>
       )}
 
       {showContactPrompt && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[110] flex items-center justify-center p-6 text-black">
-          <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black text-black">
-            <h3 className="text-xl font-black italic underline decoration-[#E85427]">地圖版輸出</h3>
+          <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black">
+            <h3 className="text-xl font-black italic underline decoration-[#E85427] text-black">地圖版輸出</h3>
             <div className="w-full text-center">
               <span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block text-zinc-400">緊急聯絡電話 (選填 / 零後台)</span>
               <input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-4 border border-zinc-100 bg-zinc-50 rounded-2xl font-bold text-center outline-none focus:border-[#E85427] text-black" />
             </div>
-            <button onClick={() => executeDownload('static')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 text-white">確認下載</button>
-            <button onClick={() => setShowContactPrompt(false)} className="text-zinc-400 font-bold text-xs text-zinc-400">取消</button>
+            <button onClick={() => executeDownload('static')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all">確認下載</button>
+            <button onClick={() => setShowContactPrompt(false)} className="text-zinc-400 font-bold text-xs">取消</button>
           </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-auto relative bg-white overflow-auto">
+      <div className="flex-1 overflow-auto relative bg-white">
         <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}>
            <div className="inline-grid p-10 px-20 rounded-3xl" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(56, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)' }}>
             <div className="bg-[#000000] text-[#FFFFFF] border-b border-r border-zinc-800 flex items-center justify-center font-black text-[42px]" style={{ gridColumn: '1', gridRow: '1', paddingBottom: '20px' }}>{dayNum}</div>
