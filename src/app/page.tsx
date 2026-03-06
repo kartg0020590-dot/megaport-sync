@@ -81,7 +81,7 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
           </div>
         </div>
         {contactInfo && (
-          <div style={{ position: 'absolute', bottom: '80px', left: '60px', color: mode === 'static' ? '#FFFFFF' : textColor, fontSize: '34px', fontWeight: 900, textAlign: 'left', zIndex: 50, opacity: 0.8 }}>
+          <div style={{ position: 'absolute', bottom: '80px', left: '60px', color: mode === 'static' ? '#FFFFFF' : textColor, fontSize: '32px', fontWeight: 900, textAlign: 'left', zIndex: 50, opacity: 0.8 }}>
             大港開唱，拾獲請聯繫：{contactInfo}。感謝您的協助。
           </div>
         )}
