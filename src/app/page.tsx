@@ -44,7 +44,7 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
               ))}
             </div>
           )}
-          <div style={{ position: 'relative', zIndex: 10, mixBlendMode: 'overlay', transform: 'scale(0.53)', marginTop: '232px', transformOrigin: 'top center' }}>
+          <div style={{ position: 'relative', zIndex: 10, mixBlendMode: 'overlay', transform: 'scale(0.53)', marginTop: '226px', transformOrigin: 'top center' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '100px repeat(10, 200px) 100px', gridTemplateRows: '80px repeat(56, 45px)', minWidth: '2200px', backgroundColor: 'rgba(255, 255, 255, 0.7)', border: '2px solid rgba(0,0,0,0.2)' }}>
                 <div style={{ gridColumn: '1', gridRow: '1', backgroundColor: '#000000', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '42px', borderBottom: '1px solid #000', paddingBottom: '60px' }}>{dayNum}</div>
                 {Object.keys(STAGE_THEME_WALLPAPER).map((s, idx) => (
@@ -80,7 +80,6 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
             </div>
           </div>
         </div>
-        {/* 💡 修正 1 & 2：34px 大小，正式話術，位置上移回 80px */}
         {contactInfo && (
           <div style={{ position: 'absolute', bottom: '80px', left: '60px', color: mode === 'static' ? '#FFFFFF' : textColor, fontSize: '34px', fontWeight: 900, textAlign: 'left', zIndex: 50, opacity: 0.8 }}>
             大港開唱，拾獲請聯繫：{contactInfo}。感謝您的協助。
@@ -221,7 +220,7 @@ export default function Home() {
   if (!isLogin) return (
     <div className="h-screen flex flex-col items-center justify-center bg-white p-8 text-black font-sans">
       <h1 className="text-4xl font-black italic mb-10 underline decoration-[#E85427]">MEGAPORT SYNC</h1>
-      <input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="帳號" className="w-full max-w-xs p-4 border-2 border-zinc-100 rounded-2xl font-bold mb-4 outline-none text-black" />
+      <input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="帳號" className="w-full max-w-xs p-4 border-2 border-zinc-100 rounded-2xl font-bold mb-4 outline-none text-black text-black" />
       <button onClick={() => fetchMySquads(email)} className="w-full max-w-xs bg-black text-white py-4 rounded-2xl font-black shadow-lg">進入系統</button>
     </div>
   );
@@ -251,7 +250,7 @@ export default function Home() {
                 <span className="font-black text-xs uppercase group-hover:text-[#E85427] transition-colors text-black">{currentSquad.squad_name}</span>
                 <span className="text-[10px] font-bold text-[#E85427] bg-[#E85427]/10 px-1.5 py-0.5 rounded tracking-tighter">{currentSquad.invite_code}</span>
               </div>
-              <span className="text-[9px] text-zinc-400 mt-1.5 font-mono">{email}</span>
+              <span className="text-[9px] text-zinc-400 mt-1.5 font-mono text-zinc-400">{email}</span>
             </div>
             <button onClick={() => setShowMembers(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-all shadow-sm">
               <span className="text-[12px]">👥</span>
@@ -259,20 +258,23 @@ export default function Home() {
             </button>
           </div>
         </div>
+
         <div className="flex items-center gap-2 text-black">
           <div className="hidden md:flex items-center gap-1.5 bg-zinc-50 px-2.5 py-1.5 rounded-full border border-zinc-200 shadow-sm mr-1 text-black">
             <span className="text-[8px] font-black text-zinc-400 uppercase">icon顏色:</span>
             <input type="color" value={userColor} onChange={e => handleMemberColorChange(e.target.value)} className="w-4 h-4 rounded-full bg-transparent border-none cursor-pointer" />
           </div>
-          <div className="hidden lg:flex items-center gap-1.5 bg-zinc-100 px-3 py-1.5 rounded-full border border-zinc-200 shadow-sm mr-2 text-black">
-            <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mr-1">輸出桌面:</span>
-            <button onClick={() => { setWallpaperMode('generated'); setShowColorPicker(true); }} className="bg-black text-white px-2.5 py-1 rounded-full font-black text-[9px]">📲 人生音樂版</button>
-            <button onClick={() => { setWallpaperMode('static'); setShowContactPrompt(true); }} className="bg-[#E85427] text-white px-2.5 py-1 rounded-full font-black text-[9px]">📍 地圖版</button>
+
+          {/* 💡 修正 1 & 2：手機版顯現，更名為📍地圖版 */}
+          <div className="flex items-center gap-1 bg-zinc-100 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm text-black">
+            <button onClick={() => { setWallpaperMode('generated'); setShowColorPicker(true); }} className="bg-black text-white px-2 py-1 rounded-full font-black text-[9px]">📲 人生音樂版</button>
+            <button onClick={() => { setWallpaperMode('static'); setShowContactPrompt(true); }} className="bg-[#E85427] text-white px-2 py-1 rounded-full font-black text-[9px]">📍 地圖版</button>
           </div>
-          <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="px-3 py-1.5 bg-zinc-100 rounded-full text-[12px] shadow-sm text-black">{zoom === 0.9 ? "🌍" : "🔎"} <span className="text-[9px] font-black uppercase ml-1">{zoom === 0.9 ? "全覽" : "放大"}</span></button>
+          
+          <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="px-2.5 py-1.5 bg-zinc-100 rounded-full text-[12px] shadow-sm text-black">{zoom === 0.9 ? "🌍" : "🔎"}</button>
           <div className="flex bg-zinc-100 rounded-lg p-0.5">
             {['2026-03-21', '2026-03-22'].map(d => (
-              <button key={d} onClick={() => { setCurrentDate(d); localStorage.setItem('megaport_current_date', d); }} className={`px-3 py-1.5 rounded-md text-[9px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}</button>
+              <button key={d} onClick={() => { setCurrentDate(d); localStorage.setItem('megaport_current_date', d); }} className={`px-2 py-1.5 rounded-md text-[9px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}</button>
             ))}
           </div>
         </div>
@@ -302,30 +304,30 @@ export default function Home() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[110] flex items-center justify-center p-6 text-black">
           <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black">
             <h3 className="text-xl font-black italic underline decoration-[#E85427] text-black">人生音樂版輸出</h3>
-            <div className="flex flex-col gap-4 w-full text-black">
+            <div className="flex flex-col gap-4 w-full">
               <div className="flex justify-between items-center w-full px-2 font-bold text-xs text-black"><span>背景色</span><input type="color" value={wallpaperBg} onChange={e => setWallpaperBg(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div>
               <div className="flex justify-between items-center w-full px-2 font-bold text-xs text-black"><span>大字色</span><input type="color" value={wallpaperText} onChange={e => setWallpaperText(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div>
-              <div className="w-full pt-2">
-                <span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block text-black">緊急聯絡電話 (選填 / 零後台)</span>
+              <div className="w-full pt-2 text-black">
+                <span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block">緊急聯絡電話 (選填 / 零後台)</span>
                 <input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-3 border border-zinc-100 bg-zinc-50 rounded-xl font-bold text-sm outline-none focus:border-[#E85427] text-black" />
               </div>
             </div>
-            <button onClick={() => executeDownload('generated')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all">確認下載</button>
-            <button onClick={() => setShowColorPicker(false)} className="text-zinc-400 font-bold text-xs">取消</button>
+            <button onClick={() => executeDownload('generated')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-white">確認並下載</button>
+            <button onClick={() => setShowColorPicker(false)} className="text-zinc-400 font-bold text-xs text-zinc-400">取消</button>
           </div>
         </div>
       )}
 
       {showContactPrompt && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[110] flex items-center justify-center p-6 text-black">
-          <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black">
-            <h3 className="text-xl font-black italic underline decoration-[#E85427] text-black">地圖版輸出</h3>
+          <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black text-black">
+            <h3 className="text-xl font-black italic underline decoration-[#E85427]">地圖版輸出</h3>
             <div className="w-full text-center">
-              <span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block">緊急聯絡電話 (選填 / 零後台)</span>
+              <span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block text-zinc-400">緊急聯絡電話 (選填 / 零後台)</span>
               <input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-4 border border-zinc-100 bg-zinc-50 rounded-2xl font-bold text-center outline-none focus:border-[#E85427] text-black" />
             </div>
-            <button onClick={() => executeDownload('static')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95">確認下載</button>
-            <button onClick={() => setShowContactPrompt(false)} className="text-zinc-400 font-bold text-xs">取消</button>
+            <button onClick={() => executeDownload('static')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 text-white">確認下載</button>
+            <button onClick={() => setShowContactPrompt(false)} className="text-zinc-400 font-bold text-xs text-zinc-400">取消</button>
           </div>
         </div>
       )}
