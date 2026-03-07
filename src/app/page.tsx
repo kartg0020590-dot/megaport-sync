@@ -38,9 +38,9 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
         <div style={{ height: '25%' }} />
         <div style={{ height: '75%', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           {mode === 'generated' && (
-            <div style={{ top: '-1446px', right: '-560px', opacity: 0.95, zIndex: 0, position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1' }}>
+            <div style={{ top: '-1245px', right: '-560px', opacity: 0.95, zIndex: 0, position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1' }}>
               {chars.map((char, idx) => (
-                <span key={idx} style={{ color: textColor, fontWeight: 900, fontStyle: 'normal', display: 'block', position: 'relative', ...(char === '。' ? { marginTop: '-450px', marginLeft: '1280px', fontSize: '900px' } : { fontSize: '1350px' }) }}>{char}</span>
+                <span key={idx} style={{ color: textColor, fontWeight: 900, fontStyle: 'normal', display: 'block', position: 'relative', ...(char === '。' ? { marginTop: '-450px', marginLeft: '1280px', fontSize: '900px' } : { fontSize: '1240px' }) }}>{char}</span>
               ))}
             </div>
           )}
