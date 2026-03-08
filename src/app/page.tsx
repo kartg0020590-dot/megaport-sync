@@ -8,7 +8,7 @@ import html2canvas from 'html2canvas'
 // 💡 開發者參數配置區 (WATERMARK & MARKER CONFIG)
 // ======================================================
 const WATERMARK_CONFIG = {
-  // 年份與日期縮放參數 (你的最佳解)
+  // 年份組 (2026)
   yearFont: "system-ui, -apple-system, sans-serif",
   yearWeight: '100',      
   yearSize: 155,        
@@ -19,7 +19,8 @@ const WATERMARK_CONFIG = {
   yearScaleY: 1.15,      
   yearColor: '#D1D5DB', 
 
-  dateFont: "'Arial Black', sans-serif-black, sans-serif",
+  // 日期組 (0321 / 0322)
+  dateFont: "'Arial Black', 'Arial-BoldMT', 'Arial', sans-serif",
   dateWeight: '900',     
   dateSize: 165,        
   dateRight: 197,        
@@ -31,8 +32,8 @@ const WATERMARK_CONFIG = {
 
   // 💡 21:50 輸出版標記 (純文字手動調校區)
   markerSize: 24,         
-  markerBottom: 1,      // 👈 已經幫你往下移 1/4 格的位置
-  markerSide: 17,         // 👈 對齊時間軸欄位的水平位置
+  markerBottom: 1,      
+  markerSide: 17,         
   
   opacity: 0.8,         
   zIndex: 999           
@@ -69,7 +70,7 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
 
   return (
     <div style={{ position: 'absolute', left: '-9999px', top: '0', pointerEvents: 'none' }}>
-      <div ref={wallpaperRef} style={{ width: '1242px', height: '2688px', backgroundColor: mode === 'static' ? '#000000' : bgColor, backgroundImage: mode === 'static' ? 'url(/megaport_static_bg.png)' : 'none', backgroundSize: 'cover', backgroundPosition: 'center', fontFamily: 'var(--font-noto-jp), sans-serif', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      <div ref={wallpaperRef} id="wallpaper-container" style={{ width: '1242px', height: '2688px', backgroundColor: mode === 'static' ? '#000000' : bgColor, backgroundImage: mode === 'static' ? 'url(/megaport_static_bg.png)' : 'none', backgroundSize: 'cover', backgroundPosition: 'center', fontFamily: 'var(--font-noto-jp), sans-serif', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         <div style={{ height: '25%' }} />
         <div style={{ height: '75%', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           {mode === 'generated' && (
@@ -80,16 +81,41 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
             </div>
           )}
 
-          {/* 浮水印 */}
-          <div style={{ position: 'absolute', right: `${WATERMARK_CONFIG.yearRight}px`, bottom: `${WATERMARK_CONFIG.yearBottom}px`, zIndex: WATERMARK_CONFIG.zIndex, pointerEvents: 'none', fontFamily: WATERMARK_CONFIG.yearFont, fontWeight: WATERMARK_CONFIG.yearWeight, transformOrigin: 'right bottom', transform: `scale(${WATERMARK_CONFIG.yearScaleX}, ${WATERMARK_CONFIG.yearScaleY})` }}>
+          {/* 💡 浮水印 - 加入 lineHeight:1 與 nowrap 確保手機座標不偏移 */}
+          <div style={{ 
+            position: 'absolute', 
+            right: `${WATERMARK_CONFIG.yearRight}px`, 
+            bottom: `${WATERMARK_CONFIG.yearBottom}px`, 
+            zIndex: WATERMARK_CONFIG.zIndex, 
+            pointerEvents: 'none', 
+            fontFamily: WATERMARK_CONFIG.yearFont, 
+            fontWeight: WATERMARK_CONFIG.yearWeight, 
+            lineHeight: '1', 
+            whiteSpace: 'nowrap',
+            transformOrigin: 'right bottom', 
+            transform: `scale(${WATERMARK_CONFIG.yearScaleX}, ${WATERMARK_CONFIG.yearScaleY})` 
+          }}>
              <span style={{ fontSize: `${WATERMARK_CONFIG.yearSize}px`, color: WATERMARK_CONFIG.yearColor, opacity: WATERMARK_CONFIG.opacity, letterSpacing: WATERMARK_CONFIG.yearSpacing }}>2026</span>
           </div>
-          <div style={{ position: 'absolute', right: `${WATERMARK_CONFIG.dateRight}px`, bottom: `${WATERMARK_CONFIG.dateBottom}px`, zIndex: WATERMARK_CONFIG.zIndex + 1, pointerEvents: 'none', fontFamily: WATERMARK_CONFIG.dateFont, fontWeight: WATERMARK_CONFIG.dateWeight, fontVariantNumeric: 'tabular-nums', transformOrigin: 'right bottom', transform: `scale(${WATERMARK_CONFIG.dateScaleX}, ${WATERMARK_CONFIG.dateScaleY})` }}>
+          
+          <div style={{ 
+            position: 'absolute', 
+            right: `${WATERMARK_CONFIG.dateRight}px`, 
+            bottom: `${WATERMARK_CONFIG.dateBottom}px`, 
+            zIndex: WATERMARK_CONFIG.zIndex + 1, 
+            pointerEvents: 'none', 
+            fontFamily: WATERMARK_CONFIG.dateFont, 
+            fontWeight: WATERMARK_CONFIG.dateWeight, 
+            fontVariantNumeric: 'tabular-nums', 
+            lineHeight: '1', 
+            whiteSpace: 'nowrap',
+            transformOrigin: 'right bottom', 
+            transform: `scale(${WATERMARK_CONFIG.dateScaleX}, ${WATERMARK_CONFIG.dateScaleY})`
+          }}>
              <span style={{ fontSize: `${WATERMARK_CONFIG.dateSize}px`, color: WATERMARK_CONFIG.dateColor, opacity: WATERMARK_CONFIG.opacity, letterSpacing: WATERMARK_CONFIG.dateSpacing }}>{fullDateStr}</span>
           </div>
 
           <div style={{ position: 'relative', zIndex: 10, mixBlendMode: 'overlay', transform: 'scale(0.53)', marginTop: '226px', transformOrigin: 'top center' }}>
-            {/* 💡 輸出版 Grid：維持 56 列 */}
             <div style={{ display: 'grid', gridTemplateColumns: '100px repeat(10, 200px) 100px', gridTemplateRows: '80px repeat(56, 45px)', minWidth: '2200px', backgroundColor: 'rgba(255, 255, 255, 0.7)', border: '2px solid rgba(0,0,0,0.2)', position: 'relative' }}>
                 <div style={{ gridColumn: '1', gridRow: '1', backgroundColor: '#000000', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '42px', borderBottom: '1px solid #000', paddingBottom: '60px' }}>{dayNum}</div>
                 {Object.keys(STAGE_THEME_WALLPAPER).map((s, idx) => (
@@ -97,7 +123,6 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
                 ))}
                 <div style={{ gridColumn: '12', gridRow: '1', backgroundColor: '#000000', color: '#FFFFFF', borderBottom: '1px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '42px', paddingBottom: '60px' }}>{dayNum}</div>
                 {Object.keys(STAGE_THEME_WALLPAPER).map((_, idx) => (<div key={`bg-col-${idx}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60', borderRight: '1px solid #D1D5DB', backgroundColor: idx % 2 === 0 ? 'rgba(161, 161, 170, 0.6)' : 'transparent' }}></div>))}
-                
                 {Array.from({ length: 56 }).map((_, i) => {
                   const minutes = (12 * 60 + 30 + i * 10);
                   const timeStr = `${Math.floor(minutes / 60)}:${minutes % 60 === 0 ? '00' : minutes % 60}`;
@@ -109,10 +134,10 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
                     </div>
                   )
                 })}
-
-                {/* 💡 輸出版 21:50 純文字標記 (手動調位) */}
-                <div style={{ position: 'absolute', bottom: `${WATERMARK_CONFIG.markerBottom}px`, left: `${WATERMARK_CONFIG.markerSide}px`, fontSize: `${WATERMARK_CONFIG.markerSize}px`, fontWeight: 700, color: '#333', zIndex: 100 }}>21:50</div>
-                <div style={{ position: 'absolute', bottom: `${WATERMARK_CONFIG.markerBottom}px`, right: `${WATERMARK_CONFIG.markerSide}px`, fontSize: `${WATERMARK_CONFIG.markerSize}px`, fontWeight: 700, color: '#333', zIndex: 100 }}>21:50</div>
+                
+                {/* 21:50 純文字標記 (輸出版專屬) */}
+                <div style={{ position: 'absolute', bottom: `${WATERMARK_CONFIG.markerBottom}px`, left: `${WATERMARK_CONFIG.markerSide}px`, fontSize: `${WATERMARK_CONFIG.markerSize}px`, fontWeight: 700, color: '#333', zIndex: 100, lineHeight: '1' }}>21:50</div>
+                <div style={{ position: 'absolute', bottom: `${WATERMARK_CONFIG.markerBottom}px`, right: `${WATERMARK_CONFIG.markerSide}px`, fontSize: `${WATERMARK_CONFIG.markerSize}px`, fontWeight: 700, color: '#333', zIndex: 100, lineHeight: '1' }}>21:50</div>
 
                 {Object.keys(STAGE_THEME_WALLPAPER).map((stage, colIndex) => {
                   const shows = wallpaperDayData[stage] || [];
@@ -161,13 +186,10 @@ export default function Home() {
   const [wallpaperBg, setWallpaperBg] = useState('#000000');
   const [wallpaperText, setWallpaperText] = useState('#E85427');
   const [wallpaperMode, setWallpaperMode] = useState<'generated' | 'static'>('generated');
-  
-  // 💡 找回彈窗狀態
   const [detailShow, setDetailShow] = useState<any>(null);
   const [compareMemberEmail, setCompareMemberEmail] = useState<string | null>(null); 
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const isLongPress = useRef(false);
-
   const wallpaperRef = useRef<HTMLDivElement>(null);
   const isOverview = zoom < 0.5;
 
@@ -220,7 +242,6 @@ export default function Home() {
     fetchSelections();
   };
 
-  // 💡 找回長按邏輯
   const handlePointerDown = (show: any) => {
     isLongPress.current = false;
     longPressTimer.current = setTimeout(() => { isLongPress.current = true; setDetailShow(show); }, 500); 
@@ -240,7 +261,7 @@ export default function Home() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!confirm('🚨 確定要徹底刪除帳號嗎？\n這將移除你所有的選團紀錄且無法復原。')) return;
+    if (!confirm('🚨 確定要徹底刪除帳號嗎？')) return;
     try {
       await supabase.from('user_selections').delete().eq('user_email', email);
       await supabase.from('squad_members').delete().eq('user_email', email);
@@ -249,9 +270,6 @@ export default function Home() {
       setIsLogin(false);
       setCurrentSquad(null);
       setEmail('');
-      setUserName('');
-      setShowMembers(false);
-      alert('帳號數據已全數清除。');
     } catch (err) { alert('刪除失敗'); }
   };
 
@@ -282,13 +300,24 @@ export default function Home() {
     }
   };
 
+  // 💡 修正手機跑位的關鍵：固定 windowWidth 並強制 DPR=1
   const executeDownload = async (mode: string) => {
     if (!wallpaperRef.current) return;
     setShowColorPicker(false);
     setShowContactPrompt(false);
     setTimeout(async () => {
       try {
-        const canvas = await html2canvas(wallpaperRef.current!, { scale: 1, useCORS: true });
+        const canvas = await html2canvas(wallpaperRef.current!, { 
+          scale: 2,           // 👈 加強解析度
+          useCORS: true,
+          logging: false,
+          windowWidth: 1242,  // 👈 強制設定渲染窗口寬度
+          windowHeight: 2688,
+          onclone: (clonedDoc) => {
+            const el = clonedDoc.getElementById('wallpaper-container');
+            if (el) el.style.transform = 'none';
+          }
+        });
         const link = document.createElement('a');
         link.download = `megaport_${currentDate.split('-')[2]}日桌面_${mode}.png`;
         link.href = canvas.toDataURL('image/png');
@@ -321,9 +350,7 @@ export default function Home() {
         <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="MEGA-XXXXXX" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black" />
         <button onClick={() => handleJoinOrCreate('join')} className="w-full bg-black text-white py-4 rounded-2xl font-black shadow-lg text-white">加入現有小隊</button>
         <button onClick={() => handleJoinOrCreate('create')} className="w-full text-zinc-400 text-xs underline font-bold mt-2">建立新小隊</button>
-        <div className="pt-10">
-          <button onClick={handleDeleteAccount} className="w-full bg-red-500 text-white py-4 rounded-2xl font-black shadow-lg active:scale-95 transition-all text-xs tracking-widest text-white">刪除帳號</button>
-        </div>
+        <div className="pt-10"><button onClick={handleDeleteAccount} className="w-full bg-red-500 text-white py-4 rounded-2xl font-black shadow-lg active:scale-95 transition-all text-xs tracking-widest text-white">刪除帳號</button></div>
       </div>
     </div>
   );
@@ -352,9 +379,7 @@ export default function Home() {
           </div>
           <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="px-2 py-1.5 bg-zinc-100 rounded-full text-[11px] shadow-sm text-black">{zoom === 0.9 ? "🌍" : "🔎"}</button>
           <div className="flex bg-zinc-100 rounded-lg p-0.5 shadow-sm text-black">
-            {['2026-03-21', '2026-03-22'].map(d => (
-              <button key={d} onClick={() => { setCurrentDate(d); localStorage.setItem('megaport_current_date', d); }} className={`px-2 py-1.5 rounded-md text-[8px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}</button>
-            ))}
+            {['2026-03-21', '2026-03-22'].map(d => (<button key={d} onClick={() => { setCurrentDate(d); localStorage.setItem('megaport_current_date', d); }} className={`px-2 py-1.5 rounded-md text-[8px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}</button>))}
           </div>
         </div>
       </div>
@@ -367,29 +392,25 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 💡 找回成員彈窗 */}
       {showMembers && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 text-black" onClick={() => setShowMembers(false)}>
           <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl space-y-6" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center border-b pb-4"><h3 className="text-lg font-black uppercase tracking-tighter text-black text-black">小隊成員</h3>{compareMemberEmail && <button onClick={() => setCompareMemberEmail(null)} className="text-[10px] font-bold text-zinc-400 underline text-black">清除對照</button>}</div>
-            <div className="space-y-3 max-h-[40vh] overflow-auto pr-2 text-black">
-              {memberList.map((m, i) => (
-                <div key={i} onClick={() => { if(m.user_email !== email) { setCompareMemberEmail(m.user_email === compareMemberEmail ? null : m.user_email); setShowMembers(false); } }} className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${m.user_email === compareMemberEmail ? 'bg-black border-black text-white' : 'bg-zinc-50 border-zinc-100'}`}>
-                  <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-sm" style={{ backgroundColor: m.user_color }}>{m.user_name?.charAt(0).toUpperCase()}</div><span className={`font-bold text-sm ${m.user_email === compareMemberEmail ? 'text-white' : 'text-black'}`}>{m.user_name}</span></div>
+            <div className="flex justify-between items-center border-b pb-4"><h3 className="text-lg font-black uppercase text-black">小隊成員</h3>{compareMemberEmail && <button onClick={() => setCompareMemberEmail(null)} className="text-[10px] font-bold text-zinc-400 underline">清除對照</button>}</div>
+            <div className="space-y-3 max-h-[40vh] overflow-auto pr-2 text-black">{memberList.map((m, i) => (
+                <div key={i} onClick={() => { if(m.user_email !== email) { setCompareMemberEmail(m.user_email === compareMemberEmail ? null : m.user_email); setShowMembers(false); } }} className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${m.user_email === compareMemberEmail ? 'bg-black border-black text-white' : 'bg-zinc-50'}`}>
+                  <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-sm" style={{ backgroundColor: m.user_color }}>{m.user_name?.charAt(0).toUpperCase()}</div><span className="font-bold text-sm">{m.user_name}</span></div>
                 </div>
-              ))}
-            </div>
+              ))}</div>
             <button onClick={() => { if(confirm('確定退出目前小隊？')) { supabase.from('squad_members').delete().eq('squad_id', currentSquad.id).eq('user_email', email).then(() => { localStorage.removeItem('megaport_squad_id'); setCurrentSquad(null); setShowMembers(false); fetchMySquads(email); }); } }} className="w-full py-4 bg-zinc-100 text-black font-black rounded-2xl text-sm">退出目前小隊</button>
           </div>
         </div>
       )}
 
-      {/* 💡 找回詳情彈窗 */}
       {detailShow && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[120] flex items-center justify-center p-6 text-black" onClick={() => setDetailShow(null)}>
-          <div className="bg-white w-full max-w-xs rounded-[40px] p-10 shadow-2xl space-y-8 flex flex-col items-center animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-            <div className="text-center space-y-2"><h3 className="text-2xl font-black italic underline decoration-[#E85427] tracking-tighter text-black">{detailShow.artist}</h3><p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">{detailShow.start} — {detailShow.end}</p></div>
-            <div className="w-full bg-zinc-50 rounded-3xl p-6 space-y-4 max-h-[30vh] overflow-auto text-black text-black"><span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest block mb-2">已選取隊友 (點選可對照)</span>
+          <div className="bg-white w-full max-w-xs rounded-[40px] p-10 shadow-2xl space-y-8 flex flex-col items-center animate-in fade-in zoom-in duration-200 text-black" onClick={e => e.stopPropagation()}>
+            <div className="text-center space-y-2 text-black"><h3 className="text-2xl font-black italic underline decoration-[#E85427] tracking-tighter text-black">{detailShow.artist}</h3><p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">{detailShow.start} — {detailShow.end}</p></div>
+            <div className="w-full bg-zinc-50 rounded-3xl p-6 space-y-4 max-h-[30vh] overflow-auto text-black"><span className="text-[9px] font-black text-zinc-300 uppercase block mb-2">已選取隊友</span>
               <div className="space-y-3">{allSelections.filter(s => String(s.performance_id) === String(detailShow.id)).map((attendee, idx) => {
                   const m = memberList.find(ml => ml.user_email === attendee.user_email);
                   return (
@@ -399,39 +420,35 @@ export default function Home() {
                   );
                 })}</div>
             </div>
-            <button onClick={() => setDetailShow(null)} className="w-full py-4 bg-black text-white rounded-2xl font-black shadow-lg text-white">返回課表</button>
+            <button onClick={() => setDetailShow(null)} className="w-full py-4 bg-black text-white rounded-2xl font-black shadow-lg">返回課表</button>
           </div>
         </div>
       )}
 
       {showColorPicker && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[110] flex items-center justify-center p-6 text-black">
-          <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black text-black"><h3 className="text-xl font-black italic underline decoration-[#E85427] text-black">人生音樂版輸出</h3>
-            <div className="flex flex-col gap-4 w-full"><div className="flex justify-between items-center w-full px-2 font-bold text-xs text-black"><span>背景色</span><input type="color" value={wallpaperBg} onChange={e => setWallpaperBg(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div><div className="flex justify-between items-center w-full px-2 font-bold text-xs text-black"><span>大字色</span><input type="color" value={wallpaperText} onChange={e => setWallpaperText(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div><div className="w-full pt-2"><span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block text-black">緊急聯絡電話 (選填 / 零後台)</span><input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-3 border border-zinc-100 bg-zinc-50 rounded-xl font-bold text-sm outline-none focus:border-[#E85427] text-black" /></div></div>
-            <button onClick={() => executeDownload('generated')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-white">確認下載</button><button onClick={() => setShowColorPicker(false)} className="text-zinc-400 font-bold text-xs text-zinc-400">取消</button>
+          <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black"><h3 className="text-xl font-black italic underline decoration-[#E85427]">人生音樂版輸出</h3>
+            <div className="flex flex-col gap-4 w-full"><div className="flex justify-between items-center w-full px-2 font-bold text-xs"><span>背景色</span><input type="color" value={wallpaperBg} onChange={e => setWallpaperBg(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div><div className="flex justify-between items-center w-full px-2 font-bold text-xs"><span>大字色</span><input type="color" value={wallpaperText} onChange={e => setWallpaperText(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div><div className="w-full pt-2"><span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block">拾獲電話</span><input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-3 border rounded-xl font-bold text-sm outline-none focus:border-[#E85427] text-black" /></div></div>
+            <button onClick={() => executeDownload('generated')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-white">確認下載</button><button onClick={() => setShowColorPicker(false)} className="text-zinc-400 font-bold text-xs">取消</button>
           </div>
         </div>
       )}
 
       {showContactPrompt && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[110] flex items-center justify-center p-6 text-black">
-          <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black"><h3 className="text-xl font-black italic underline decoration-[#E85427] text-black">地圖版輸出</h3><div className="w-full text-center"><span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block text-zinc-400">緊急聯絡電話 (選填 / 零後台)</span><input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-4 border border-zinc-100 bg-zinc-50 rounded-2xl font-bold text-center outline-none focus:border-[#E85427] text-black text-black" /></div>
-            <button onClick={() => executeDownload('static')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 text-white">確認下載</button><button onClick={() => setShowContactPrompt(false)} className="text-zinc-400 font-bold text-xs text-zinc-400">取消</button>
+          <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black"><h3 className="text-xl font-black italic underline decoration-[#E85427]">地圖版輸出</h3><div className="w-full text-center"><span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block">拾獲電話</span><input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-4 border rounded-2xl font-bold text-center outline-none focus:border-[#E85427] text-black" /></div>
+            <button onClick={() => executeDownload('static')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 text-white">確認下載</button><button onClick={() => setShowContactPrompt(false)} className="text-zinc-400 font-bold text-xs">取消</button>
           </div>
         </div>
       )}
 
-      {/* 💡 網頁版 Grid：顯示 57 列，包含 21:50 */}
       <div className="flex-1 overflow-auto relative bg-white overflow-auto">
         <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}>
            <div className="inline-grid p-10 px-20 rounded-3xl" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)' }}>
             <div className="bg-[#000000] text-[#FFFFFF] border-b border-r border-zinc-800 flex items-center justify-center font-black text-[42px]" style={{ gridColumn: '1', gridRow: '1', paddingBottom: '20px' }}>{dayNum}</div>
-            {Object.keys(STAGE_THEME).map((s, idx) => (
-              <div key={s} className="sticky top-0 z-40 border-b border-r border-zinc-300 flex items-center justify-center font-black text-[42px] bg-white text-black" style={{ gridColumnStart: idx + 2, backgroundColor: STAGE_THEME[s].bg, paddingBottom: '20px' }}>{s}</div>
-            ))}
+            {Object.keys(STAGE_THEME).map((s, idx) => (<div key={s} className="sticky top-0 z-40 border-b border-r border-zinc-300 flex items-center justify-center font-black text-[42px] bg-white text-black" style={{ gridColumnStart: idx + 2, backgroundColor: STAGE_THEME[s].bg, paddingBottom: '20px' }}>{s}</div>))}
             <div className="bg-[#000000] text-[#FFFFFF] border-b border-l border-zinc-800 flex items-center justify-center font-black text-[42px]" style={{ gridColumn: '12', gridRow: '1', paddingBottom: '20px' }}>{dayNum}</div>
             {Object.keys(STAGE_THEME).map((_, idx) => (<div key={`bg-col-${idx}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60' }} className={`pointer-events-none z-0 border-r border-zinc-300 ${idx % 2 === 0 ? 'bg-zinc-200' : 'bg-white'}`}></div>))}
-            
             {Array.from({ length: 57 }).map((_, i) => {
               const minutes = (12 * 60 + 30 + i * 10);
               const timeStr = `${Math.floor(minutes / 60)}:${minutes % 60 === 0 ? '00' : minutes % 60}`;
@@ -443,7 +460,6 @@ export default function Home() {
                 </div>
               )
             })}
-
             {Object.keys(STAGE_THEME).map((stage, colIndex) => {
               const shows = gridData[stage] || [];
               return shows.map((show: any) => {
@@ -453,11 +469,10 @@ export default function Home() {
                 const startRow = Math.floor(((Number(show.start.split(':')[0]) * 60 + Number(show.start.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
                 const endRow = Math.floor(((Number(show.end.split(':')[0]) * 60 + Number(show.end.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
                 const physicalSize = (isOverview ? 14 : 24) / zoom; 
-
                 return (
                   <div key={show.id} onPointerDown={() => handlePointerDown(show)} onPointerUp={() => handlePointerUp(show)} onPointerLeave={() => { if(longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }} className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative z-30 transition-all ${isMe ? 'shadow-2xl' : ''}`} style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: isMe ? '#E85427' : STAGE_THEME[stage].bg, border: isComparedMember ? '8px solid #000000' : 'none', boxSizing: 'border-box' }}>
-                    <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 whitespace-pre-line ${isMe ? 'text-white' : 'text-black'}`}>{show.artist}</p>
-                    <div className={`absolute bottom-1 left-2 max-w-[90%] flex flex-row pointer-events-none overflow-hidden ${isOverview ? '-space-x-3' : '-space-x-1.5'}`}>
+                    <p className={`font-black tracking-tighter text-[36px] p-2 whitespace-pre-line ${isMe ? 'text-white' : 'text-black'}`}>{show.artist}</p>
+                    <div className={`absolute bottom-1 left-2 flex flex-row pointer-events-none overflow-hidden -space-x-1.5`}>
                       {attendees.map((f, i) => {
                         const m = memberList.find(ml => ml.user_email === f.user_email);
                         return ( <div key={i} className="rounded-full flex items-center justify-center font-black text-white border border-black shadow-sm" style={{ backgroundColor: m?.user_color || '#000', width: `${physicalSize}px`, height: `${physicalSize}px`, fontSize: `${physicalSize * 0.45}px`, zIndex: attendees.length - i }}>{(m?.user_name || f.user_name || '?').charAt(0).toUpperCase()}</div> );
