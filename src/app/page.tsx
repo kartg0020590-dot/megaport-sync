@@ -8,7 +8,6 @@ import html2canvas from 'html2canvas'
 // 💡 開發者參數配置區 (WATERMARK & MARKER CONFIG)
 // ======================================================
 const WATERMARK_CONFIG = {
-  // 年份組 (2026)
   yearFont: "system-ui, -apple-system, sans-serif",
   yearWeight: '100',      
   yearSize: 155,        
@@ -19,22 +18,19 @@ const WATERMARK_CONFIG = {
   yearScaleY: 1.15,      
   yearColor: '#D1D5DB', 
 
-  // 日期組 (0321 / 0322) - 物理拆分鎖定
   dateFont: "'Arial Black', 'Arial-BoldMT', Gadget, sans-serif",
   dateWeight: '900',     
   dateSize: 165,        
   dateRight: 180,        
   dateBottom: 459,       
-  dateSpacing: -15,      // 👈 改為數值，用於物理間距計算
+  dateSpacing: -15,      
   dateScaleX: 1.15,      
   dateScaleY: 1.1,      
   dateColor: '#FAD390', 
 
-  // 💡 21:50 輸出版標記 (純文字手動調校)
   markerSize: 24,         
   markerBottom: 1,      
   markerSide: 17,         
-  
   opacity: 0.8,         
   zIndex: 999           
 };
@@ -81,39 +77,17 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
             </div>
           )}
 
-          {/* 浮水印 - 2026 */}
           <div style={{ position: 'absolute', right: `${WATERMARK_CONFIG.yearRight}px`, bottom: `${WATERMARK_CONFIG.yearBottom}px`, zIndex: WATERMARK_CONFIG.zIndex, pointerEvents: 'none', fontFamily: WATERMARK_CONFIG.yearFont, fontWeight: WATERMARK_CONFIG.yearWeight, transformOrigin: 'right bottom', transform: `scale(${WATERMARK_CONFIG.yearScaleX}, ${WATERMARK_CONFIG.yearScaleY})` }}>
              <span style={{ fontSize: `${WATERMARK_CONFIG.yearSize}px`, color: WATERMARK_CONFIG.yearColor, opacity: WATERMARK_CONFIG.opacity, letterSpacing: WATERMARK_CONFIG.yearSpacing }}>2026</span>
           </div>
           
-          {/* 💡 浮水印 - 日期 (物理拆分鎖定法) */}
-          <div style={{ 
-            position: 'absolute', 
-            right: `${WATERMARK_CONFIG.dateRight}px`, 
-            bottom: `${WATERMARK_CONFIG.dateBottom}px`, 
-            zIndex: WATERMARK_CONFIG.zIndex + 1, 
-            pointerEvents: 'none', 
-            fontFamily: WATERMARK_CONFIG.dateFont, 
-            fontWeight: WATERMARK_CONFIG.dateWeight, 
-            transformOrigin: 'right bottom', 
-            transform: `scale(${WATERMARK_CONFIG.dateScaleX}, ${WATERMARK_CONFIG.dateScaleY})`,
-            display: 'flex',
-            flexDirection: 'row-reverse' // 從右邊對齊開始排
-          }}>
+          <div style={{ position: 'absolute', right: `${WATERMARK_CONFIG.dateRight}px`, bottom: `${WATERMARK_CONFIG.dateBottom}px`, zIndex: WATERMARK_CONFIG.zIndex + 1, pointerEvents: 'none', fontFamily: WATERMARK_CONFIG.dateFont, fontWeight: WATERMARK_CONFIG.dateWeight, transformOrigin: 'right bottom', transform: `scale(${WATERMARK_CONFIG.dateScaleX}, ${WATERMARK_CONFIG.dateScaleY})`, display: 'flex', flexDirection: 'row-reverse' }}>
              {fullDateStr.split('').reverse().map((char, i) => (
-               <span key={i} style={{ 
-                 fontSize: `${WATERMARK_CONFIG.dateSize}px`, 
-                 color: WATERMARK_CONFIG.dateColor, 
-                 opacity: WATERMARK_CONFIG.opacity, 
-                 marginRight: i === 0 ? '0' : `${WATERMARK_CONFIG.dateSpacing}px`, // 物理級控制間距
-                 lineHeight: '1',
-                 display: 'inline-block'
-               }}>{char}</span>
+               <span key={i} style={{ fontSize: `${WATERMARK_CONFIG.dateSize}px`, color: WATERMARK_CONFIG.dateColor, opacity: WATERMARK_CONFIG.opacity, marginRight: i === 0 ? '0' : `${WATERMARK_CONFIG.dateSpacing}px`, lineHeight: '1', display: 'inline-block' }}>{char}</span>
              ))}
           </div>
 
           <div style={{ position: 'relative', zIndex: 10, mixBlendMode: 'overlay', transform: 'scale(0.53)', marginTop: '226px', transformOrigin: 'top center' }}>
-            {/* 輸出版 Grid：維持 56 列 (21:40封頂) */}
             <div style={{ display: 'grid', gridTemplateColumns: '100px repeat(10, 200px) 100px', gridTemplateRows: '80px repeat(56, 45px)', minWidth: '2200px', backgroundColor: 'rgba(255, 255, 255, 0.7)', border: '2px solid rgba(0,0,0,0.2)', position: 'relative' }}>
                 <div style={{ gridColumn: '1', gridRow: '1', backgroundColor: '#000000', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '42px', borderBottom: '1px solid #000', paddingBottom: '60px' }}>{dayNum}</div>
                 {Object.keys(STAGE_THEME_WALLPAPER).map((s, idx) => (
@@ -186,7 +160,6 @@ export default function Home() {
   const [compareMemberEmail, setCompareMemberEmail] = useState<string | null>(null); 
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const isLongPress = useRef(false);
-
   const wallpaperRef = useRef<HTMLDivElement>(null);
   const isOverview = zoom < 0.5;
 
@@ -300,6 +273,25 @@ export default function Home() {
     }
   };
 
+  const handleRenameSquad = async () => {
+    if (!currentSquad) return;
+    const newName = prompt('請輸入新的小隊名稱：', currentSquad.squad_name);
+    if (!newName || newName.trim() === '' || newName === currentSquad.squad_name) return;
+
+    const { error } = await supabase
+      .from('squads')
+      .update({ squad_name: newName.trim() })
+      .eq('id', currentSquad.id);
+
+    if (error) {
+      alert('修改名稱失敗');
+    } else {
+      const updatedSquad = { ...currentSquad, squad_name: newName.trim() };
+      setCurrentSquad(updatedSquad);
+      setSquads(prev => prev.map(s => s.id === currentSquad.id ? updatedSquad : s));
+    }
+  };
+
   const executeDownload = async (mode: string) => {
     if (!wallpaperRef.current) return;
     setShowColorPicker(false);
@@ -309,7 +301,7 @@ export default function Home() {
         const canvas = await html2canvas(wallpaperRef.current!, { 
           scale: 1, 
           useCORS: true,
-          windowWidth: 1242,   // 👈 固定渲染視窗，解決跨裝置位移核心
+          windowWidth: 1242,
           windowHeight: 2688
         });
         const link = document.createElement('a');
@@ -354,8 +346,8 @@ export default function Home() {
           <div className="flex items-center gap-1.5">
             <div className="flex flex-col cursor-pointer group" onClick={() => { localStorage.removeItem('megaport_squad_id'); setCurrentSquad(null); }}>
               <div className="flex items-baseline gap-1">
-                <span className="font-black text-[10px] uppercase group-hover:text-[#E85427] transition-colors text-black">{currentSquad?.squad_name}</span>
-                <span className="text-[8px] font-bold text-[#E85427] bg-[#E85427]/10 px-1 py-0.5 rounded tracking-tighter">{currentSquad?.invite_code}</span>
+                <span className="font-black text-[10px] uppercase text-black">{currentSquad?.squad_name}</span>
+                <span className="text-[8px] font-bold text-[#E85427] bg-[#E85427]/10 px-1 py-0.5 rounded">{currentSquad?.invite_code}</span>
               </div>
             </div>
             <button onClick={() => setShowMembers(true)} className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all shadow-sm ${compareMemberEmail ? 'bg-black text-white' : 'bg-zinc-100 text-black'}`}>
@@ -378,7 +370,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 💡 修正：增加下載按鈕層級 z-index */}
       <div className="fixed bottom-6 right-6 z-[300] flex flex-col items-end gap-3 pointer-events-none">
         <div className="bg-white/80 backdrop-blur-md p-3 rounded-3xl border border-zinc-200 shadow-2xl flex flex-col gap-2 pointer-events-auto text-black">
           <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest text-center border-b border-zinc-100 pb-1.5 mb-0.5">生成桌布</span>
@@ -389,14 +380,55 @@ export default function Home() {
 
       {showMembers && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex items-center justify-center p-6 text-black" onClick={() => setShowMembers(false)}>
-          <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl space-y-6" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center border-b pb-4"><h3 className="text-lg font-black uppercase tracking-tighter text-black">小隊成員</h3>{compareMemberEmail && <button onClick={() => setCompareMemberEmail(null)} className="text-[10px] font-bold text-zinc-400 underline">清除對照</button>}</div>
-            <div className="space-y-3 max-h-[40vh] overflow-auto pr-2 text-black">{memberList.map((m, i) => (
-                <div key={i} onClick={() => { if(m.user_email !== email) { setCompareMemberEmail(m.user_email === compareMemberEmail ? null : m.user_email); setShowMembers(false); } }} className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${m.user_email === compareMemberEmail ? 'bg-black border-black text-white' : 'bg-zinc-50'}`}>
-                  <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-sm" style={{ backgroundColor: m.user_color }}>{m.user_name?.charAt(0).toUpperCase()}</div><span className="font-bold text-sm">{m.user_name}</span></div>
+          <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl space-y-6 relative" onClick={e => e.stopPropagation()}>
+            
+            {/* Header 區塊 */}
+            <div className="flex justify-between items-start border-b pb-4 relative">
+              <div className="flex flex-col gap-1 pr-16 group">
+                <span className="text-[10px] font-black text-[#E85427] uppercase tracking-widest">目前小隊</span>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-black uppercase text-black break-all leading-tight">
+                    {currentSquad?.squad_name}
+                  </h3>
+                  <button 
+                    onClick={handleRenameSquad}
+                    className="p-1.5 hover:bg-zinc-100 rounded-lg transition-colors text-sm"
+                    title="修改名稱"
+                  >
+                    🖊️
+                  </button>
                 </div>
-              ))}</div>
-            <button onClick={() => { if(confirm('確定退出目前小隊？')) { supabase.from('squad_members').delete().eq('squad_id', currentSquad.id).eq('user_email', email).then(() => { localStorage.removeItem('megaport_squad_id'); setCurrentSquad(null); setShowMembers(false); fetchMySquads(email); }); } }} className="w-full py-4 bg-zinc-100 text-black font-black rounded-2xl text-sm">退出目前小隊</button>
+              </div>
+              
+              <button 
+                onClick={() => { setCurrentSquad(null); setShowMembers(false); }} 
+                className="absolute top-0 right-0 py-2 px-3 bg-zinc-100 hover:bg-black hover:text-white text-black font-bold rounded-xl text-[10px] transition-all active:scale-95 shadow-sm"
+              >
+                ✕ 回小隊清單
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[40vh] overflow-auto pr-2 text-black">
+              {memberList.map((m, i) => (
+                <div key={i} onClick={() => { if(m.user_email !== email) { setCompareMemberEmail(m.user_email === compareMemberEmail ? null : m.user_email); setShowMembers(false); } }} className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${m.user_email === compareMemberEmail ? 'bg-black border-black text-white' : 'bg-zinc-50 border-zinc-100 hover:border-zinc-300'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-sm" style={{ backgroundColor: m.user_color }}>
+                      {m.user_name?.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-bold text-sm">{m.user_name} {m.user_email === email && "(我)"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 border-t border-zinc-50">
+              <button 
+                onClick={() => { if(confirm(`確定要退出「${currentSquad?.squad_name}」嗎？`)) { supabase.from('squad_members').delete().eq('squad_id', currentSquad.id).eq('user_email', email).then(() => { localStorage.removeItem('megaport_squad_id'); setCurrentSquad(null); setShowMembers(false); fetchMySquads(email); }); } }} 
+                className="w-full py-4 bg-zinc-50 hover:bg-red-50 text-red-500 font-black rounded-2xl text-sm transition-colors active:scale-95"
+              >
+                退出目前小隊
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -438,7 +470,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* 💡 網頁版 Grid：顯示 57 列，包含 21:50 */}
       <div className="flex-1 overflow-auto relative bg-white overflow-auto">
         <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}>
            <div className="inline-grid p-10 px-20 rounded-3xl" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)' }}>
@@ -446,7 +477,6 @@ export default function Home() {
             {Object.keys(STAGE_THEME).map((s, idx) => (<div key={s} className="sticky top-0 z-40 border-b border-r border-zinc-300 flex items-center justify-center font-black text-[42px] bg-white text-black" style={{ gridColumnStart: idx + 2, backgroundColor: STAGE_THEME[s].bg, paddingBottom: '20px' }}>{s}</div>))}
             <div className="bg-[#000000] text-[#FFFFFF] border-b border-l border-zinc-800 flex items-center justify-center font-black text-[42px]" style={{ gridColumn: '12', gridRow: '1', paddingBottom: '20px' }}>{dayNum}</div>
             {Object.keys(STAGE_THEME).map((_, idx) => (<div key={`bg-col-${idx}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60' }} className={`pointer-events-none z-0 border-r border-zinc-300 ${idx % 2 === 0 ? 'bg-zinc-200' : 'bg-white'}`}></div>))}
-            
             {Array.from({ length: 57 }).map((_, i) => {
               const minutes = (12 * 60 + 30 + i * 10);
               const timeStr = `${Math.floor(minutes / 60)}:${minutes % 60 === 0 ? '00' : minutes % 60}`;
@@ -458,7 +488,6 @@ export default function Home() {
                 </div>
               )
             })}
-
             {Object.keys(STAGE_THEME).map((stage, colIndex) => {
               const shows = gridData[stage] || [];
               return shows.map((show: any) => {
@@ -468,7 +497,6 @@ export default function Home() {
                 const startRow = Math.floor(((Number(show.start.split(':')[0]) * 60 + Number(show.start.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
                 const endRow = Math.floor(((Number(show.end.split(':')[0]) * 60 + Number(show.end.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
                 const physicalSize = (isOverview ? 14 : 24) / zoom; 
-
                 return (
                   <div key={show.id} onPointerDown={() => handlePointerDown(show)} onPointerUp={() => handlePointerUp(show)} onPointerLeave={() => { if(longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }} className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative z-30 transition-all ${isMe ? 'shadow-2xl' : ''}`} style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: isMe ? '#E85427' : STAGE_THEME[stage].bg, border: isComparedMember ? '8px solid #000000' : 'none', boxSizing: 'border-box' }}>
                     <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 whitespace-pre-line ${isMe ? 'text-white' : 'text-black'}`}>{show.artist}</p>
