@@ -328,7 +328,7 @@ export default function Home() {
   if (!isLogin) return (
     <div className="h-screen flex flex-col items-center justify-center bg-white p-8 text-black font-sans">
       <h1 className="text-4xl font-black italic mb-10 underline decoration-[#E85427]">MEGAPORT SYNC</h1>
-      <input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="帳號" className="w-full max-w-xs p-4 border-2 border-zinc-100 rounded-2xl font-bold mb-4 outline-none text-black" />
+      <input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="填入帳號或新增帳號" className="w-full max-w-xs p-4 border-2 border-zinc-100 rounded-2xl font-bold mb-4 outline-none text-black" />
       <button onClick={() => fetchMySquads(email)} className="w-full max-w-xs bg-black text-white py-4 rounded-2xl font-black shadow-lg">進入系統</button>
     </div>
   );
