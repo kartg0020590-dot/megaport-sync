@@ -406,7 +406,7 @@ export default function Home() {
             <span className="text-[7px] font-black text-zinc-400 uppercase tracking-tighter">ICON:</span>
             <input type="color" value={userColor} onChange={e => handleMemberColorChange(e.target.value)} className="w-3.5 h-3.5 rounded-full bg-transparent border-none cursor-pointer" />
           </div>
-          <button onClick={() => setZoom(zoom === 0.9 ? 0.28 : 0.9)} className="px-2 py-1.5 bg-zinc-100 rounded-full text-[11px] shadow-sm text-black">{zoom === 0.9 ? "🌍" : "🔎"}</button>
+          <button onClick={() => setZoom(zoom === 0.65 ? 0.28 : 0.65)} className="px-2 py-1.5 bg-zinc-100 rounded-full text-[11px] shadow-sm text-black">{zoom === 0.9 ? "🌍" : "🔎"}</button>
           <div className="flex bg-zinc-100 rounded-lg p-0.5 shadow-sm text-black text-black">
             {['2026-03-21', '2026-03-22'].map(d => (
               <button key={d} onClick={() => { setCurrentDate(d); localStorage.setItem('megaport_current_date', d); }} className={`px-2 py-1.5 rounded-md text-[8px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}</button>
@@ -578,9 +578,29 @@ export default function Home() {
                 const physicalSize = (isOverview ? 14 : 26.4) / zoom; 
 
                 return (
-                  <div key={show.id} onPointerDown={(e) => handlePointerDown(e, show)} onPointerMove={handlePointerMove} onPointerUp={(e) => handlePointerUp(e, show)} onPointerCancel={handlePointerCancel}
-                    className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative z-30 transition-all duration-300 ${isMe && !spotlightActive ? 'shadow-2xl' : ''}`} 
-                    style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: finalBg, border: borderStyle, boxSizing: 'border-box', zIndex: (isComparedMember || (isMeSpotlight && isMe)) ? 60 : 30, opacity: opacity, filter: (spotlightActive && !isMe && !isComparedMember) ? 'brightness(0.7) grayscale(20%)' : 'none' }}>
+                  <div key={show.id} 
+                    onPointerDown={(e) => handlePointerDown(e, show)} 
+                    onPointerMove={handlePointerMove} 
+                    onPointerUp={(e) => handlePointerUp(e, show)} 
+                    onPointerCancel={handlePointerCancel}
+                    // 💡 修正 1：在 className 加入 select-none
+                    className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative z-30 transition-all duration-300 select-none ${isMe && !spotlightActive ? 'shadow-2xl' : ''}`} 
+                    style={{ 
+                      gridRow: `${startRow} / ${endRow}`, 
+                      gridColumnStart: colIndex + 2, 
+                      backgroundColor: finalBg, 
+                      border: borderStyle, 
+                      boxSizing: 'border-box', 
+                      zIndex: (isComparedMember || (isMeSpotlight && isMe)) ? 60 : 30, 
+                      opacity: opacity, 
+                      filter: (spotlightActive && !isMe && !isComparedMember) ? 'brightness(0.7) grayscale(20%)' : 'none',
+                      // 💡 修正 2：將這些屬性移入 style 大括號內，並加上逗號
+                      WebkitTouchCallout: 'none',
+                      WebkitUserSelect: 'none',
+                      userSelect: 'none',
+                      touchAction: 'pan-y pan-x' 
+                    }}
+                  >
                     <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 whitespace-pre-line ${textColor}`}>{show.artist}</p>
                     {(isMe || (spotlightActive && isComparedMember) || !spotlightActive) && (
                       <div className={`absolute bottom-1 left-2 max-w-[90%] flex flex-row pointer-events-none overflow-hidden ${isOverview ? '-space-x-3' : '-space-x-1.5'}`}>
