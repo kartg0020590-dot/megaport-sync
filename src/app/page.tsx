@@ -138,6 +138,7 @@ export default function Home() {
   const hasMovedSignificant = useRef(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const isLongPress = useRef(false);
+  const touchPoints = useRef(0);
 
   const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState('');
@@ -259,16 +260,42 @@ export default function Home() {
     fetchSelections();
   };
 
+// 💡 替換這整塊
   const handlePointerDown = (e: any, show: any) => {
+    if (e.pointerType === 'touch') touchPoints.current += 1;
+    if (touchPoints.current > 1) { hasMovedSignificant.current = true; return; }
+
     pointerStartPos.current = { x: e.clientX, y: e.clientY };
-    hasMovedSignificant.current = false; isLongPress.current = false;
-    longPressTimer.current = setTimeout(() => { if (!hasMovedSignificant.current) { isLongPress.current = true; setDetailShow(show); } }, 500); 
+    hasMovedSignificant.current = false;
+    isLongPress.current = false;
+    longPressTimer.current = setTimeout(() => { 
+      if (!hasMovedSignificant.current && touchPoints.current === 1) {
+        isLongPress.current = true; 
+        setDetailShow(show); 
+      }
+    }, 500); 
   };
 
-  const handlePointerMove = (e: any) => { if (Math.abs(e.clientX - pointerStartPos.current.x) > 25 || Math.abs(e.clientY - pointerStartPos.current.y) > 25) hasMovedSignificant.current = true; };
+  const handlePointerMove = (e: any) => {
+    const dx = Math.abs(e.clientX - pointerStartPos.current.x);
+    const dy = Math.abs(e.clientY - pointerStartPos.current.y);
+    if (dx > 25 || dy > 25 || touchPoints.current > 1) {
+      hasMovedSignificant.current = true;
+    }
+  };
+
   const handlePointerUp = (e: any, show: any) => {
+    if (e.pointerType === 'touch') touchPoints.current = Math.max(0, touchPoints.current - 1);
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
-    if (!hasMovedSignificant.current && !isLongPress.current) handleToggle(show); 
+    if (hasMovedSignificant.current) return;
+    if (!isLongPress.current && touchPoints.current === 0) handleToggle(show); 
+  };
+
+  // 💡 這是新增的，確保縮放取消後不會誤點
+  const handlePointerCancel = () => {
+    touchPoints.current = 0;
+    hasMovedSignificant.current = true;
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); }
   };
 
   const handleMemberColorChange = async (c: string) => {
@@ -375,7 +402,7 @@ export default function Home() {
       </div>
 
       {/* 💡 修正：輸出桌布按鈕位置調高、調右 */}
-      <div className="fixed bottom-28 right-2 z-[300] flex flex-col items-end gap-3 pointer-events-none text-black">
+      <div className="fixed bottom-24 right-2 z-[300] flex flex-col items-end gap-3 pointer-events-none text-black">
         <div className="bg-white/80 backdrop-blur-md p-3 rounded-3xl border border-zinc-200 shadow-2xl flex flex-col gap-2 pointer-events-auto text-black">
           <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest text-center border-b border-zinc-100 pb-1.5 mb-0.5">生成桌布</span>
           <button onClick={() => { setWallpaperMode('generated'); setShowColorPicker(true); }} className="bg-black text-white px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-lg active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap">📲 人生音樂版</button>
