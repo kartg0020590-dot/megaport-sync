@@ -160,13 +160,11 @@ export default function Home() {
   const [detailShow, setDetailShow] = useState<any>(null);
   const [compareMemberEmail, setCompareMemberEmail] = useState<string | null>(null); 
   
-  // 💡 位移偵測專用 Ref
+  // 💡 防誤觸強化 Ref
   const pointerStartPos = useRef({ x: 0, y: 0 });
+  const hasMovedSignificant = useRef(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const isLongPress = useRef(false);
-  
-  const wallpaperRef = useRef<HTMLDivElement>(null);
-  const isOverview = zoom < 0.5;
 
   const flatArtistData = useMemo(() => {
     let list: any[] = [];
@@ -248,27 +246,34 @@ export default function Home() {
     fetchSelections();
   };
 
-  // 💡 位移偵測按下
+  // 💡 強化後的 PointerDown
   const handlePointerDown = (e: any, show: any) => {
     pointerStartPos.current = { x: e.clientX, y: e.clientY };
+    hasMovedSignificant.current = false;
     isLongPress.current = false;
     longPressTimer.current = setTimeout(() => { 
-      // 如果按下 500ms 後手指移動距離還很小，判定為長按
-      isLongPress.current = true; 
-      setDetailShow(show); 
+      if (!hasMovedSignificant.current) {
+        isLongPress.current = true; 
+        setDetailShow(show); 
+      }
     }, 500); 
   };
 
-  // 💡 位移偵測放開
+  // 💡 強化後的 PointerMove (即時判斷)
+  const handlePointerMove = (e: any) => {
+    const dx = Math.abs(e.clientX - pointerStartPos.current.x);
+    const dy = Math.abs(e.clientY - pointerStartPos.current.y);
+    if (dx > 25 || dy > 25) {
+      hasMovedSignificant.current = true;
+    }
+  };
+
+  // 💡 強化後的 PointerUp
   const handlePointerUp = (e: any, show: any) => {
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
     
-    // 計算位移
-    const dx = Math.abs(e.clientX - pointerStartPos.current.x);
-    const dy = Math.abs(e.clientY - pointerStartPos.current.y);
-    
-    // 如果位移超過 10 像素，判定為滑動，直接結束不執行點擊
-    if (dx > 10 || dy > 10) return;
+    // 如果過程中有明顯移動，直接無視這次點擊
+    if (hasMovedSignificant.current) return;
 
     if (!isLongPress.current) handleToggle(show); 
   };
@@ -367,8 +372,8 @@ export default function Home() {
   if (!isLogin) return (
     <div className="h-screen flex flex-col items-center justify-center bg-white p-8 text-black font-sans">
       <h1 className="text-4xl font-black italic mb-10 underline decoration-[#E85427]">MEGAPORT SYNC</h1>
-      <input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="填入帳號或新增帳號" className="w-full max-w-xs p-4 border-2 border-zinc-100 rounded-2xl font-bold mb-4 outline-none text-black" />
-      <button onClick={() => fetchMySquads(email)} className="w-full max-w-xs bg-black text-white py-4 rounded-2xl font-black shadow-lg text-white">進入系統</button>
+      <input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="填入帳號或新增帳號" className="w-full max-w-xs p-4 border-2 border-zinc-100 rounded-2xl font-bold mb-4 outline-none text-black text-black" />
+      <button onClick={() => fetchMySquads(email)} className="w-full max-w-xs bg-black text-white py-4 rounded-2xl font-black shadow-lg">進入系統</button>
     </div>
   );
 
@@ -379,7 +384,7 @@ export default function Home() {
       <div className="w-full max-w-xs space-y-4 pt-6 border-t border-zinc-100 text-black">
         <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="顯示大名" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black text-black" />
         <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="MEGA-XXXXXX" className="w-full p-4 border-2 border-zinc-100 rounded-2xl font-bold outline-none text-black text-black" />
-        <button onClick={() => handleJoinOrCreate('join')} className="w-full bg-black text-white py-4 rounded-2xl font-black shadow-lg text-white">加入現有小隊</button>
+        <button onClick={() => handleJoinOrCreate('join')} className="w-full bg-black text-white py-4 rounded-2xl font-black shadow-lg text-white text-white">加入現有小隊</button>
         <button onClick={() => handleJoinOrCreate('create')} className="w-full text-zinc-400 text-xs underline font-bold mt-2">建立新小隊</button>
         <div className="pt-10"><button onClick={handleDeleteAccount} className="w-full bg-red-500 text-white py-4 rounded-2xl font-black shadow-lg active:scale-95 transition-all text-xs tracking-widest text-white">刪除帳號</button></div>
       </div>
@@ -391,7 +396,7 @@ export default function Home() {
       <div className="p-4 bg-white border-b border-zinc-300 flex justify-between items-center z-50 shrink-0 text-black">
         <div className="flex flex-col text-left leading-none text-black">
           <div className="flex items-center gap-1.5 cursor-pointer group" onClick={() => setShowMembers(true)}>
-             {/* 💡 修正：小隊名稱加大 2px (10 -> 12) */}
+             {/* 💡 修正：小隊名稱加大 2px */}
              <span className="font-black text-[12px] uppercase group-hover:text-[#E85427] transition-colors text-black">{currentSquad?.squad_name}</span>
              <button className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all shadow-sm ${compareMemberEmail ? 'bg-black text-white' : 'bg-zinc-100 text-black'}`}>
                 <span className="text-[10px]">{compareMemberEmail ? '🎯' : '👥'}</span>
@@ -400,13 +405,12 @@ export default function Home() {
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-black">
-          {/* 💡 修正：名單改成 Artist，且樣式跟「成員」齊平 */}
+          {/* 💡 修正：Artist 與 成員齊平 */}
           <button onClick={() => setShowArtistList(true)} className="flex items-center gap-1 px-2.5 py-1.5 bg-zinc-100 hover:bg-black hover:text-white rounded-full transition-all shadow-sm">
              <span className="text-[10px]">🎸</span>
              <span className="text-[8px] font-black uppercase tracking-wider text-black">Artist</span>
           </button>
-          
-          <div className="flex items-center gap-1 bg-zinc-50 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm text-black text-black">
+          <div className="flex items-center gap-1 bg-zinc-50 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm text-black">
             <span className="text-[7px] font-black text-zinc-400 uppercase tracking-tighter text-black">ICON:</span>
             <input type="color" value={userColor} onChange={e => handleMemberColorChange(e.target.value)} className="w-3.5 h-3.5 rounded-full bg-transparent border-none cursor-pointer text-black" />
           </div>
@@ -419,39 +423,31 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 生成桌布按鈕區 */}
+      {/* 生成桌布區 */}
       <div className="fixed bottom-6 right-6 z-[300] flex flex-col items-end gap-3 pointer-events-none text-black">
         <div className="bg-white/80 backdrop-blur-md p-3 rounded-3xl border border-zinc-200 shadow-2xl flex flex-col gap-2 pointer-events-auto text-black">
           <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest text-center border-b border-zinc-100 pb-1.5 mb-0.5 text-black">生成桌布</span>
-          <button onClick={() => { setWallpaperMode('generated'); setShowColorPicker(true); }} className="bg-black text-white px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-lg active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap text-white">📲 人生音樂版</button>
-          <button onClick={() => { setWallpaperMode('static'); setShowContactPrompt(true); }} className="bg-[#E85427] text-white px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-lg active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap text-white">📍 地圖版</button>
+          <button onClick={() => { setWallpaperMode('generated'); setShowColorPicker(true); }} className="bg-black text-white px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-lg active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap text-white text-white">📲 人生音樂版</button>
+          <button onClick={() => { setWallpaperMode('static'); setShowContactPrompt(true); }} className="bg-[#E85427] text-white px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-lg active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap text-white text-white">📍 地圖版</button>
         </div>
       </div>
 
       {showArtistList && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex items-center justify-center p-6 text-black text-black" onClick={() => setShowArtistList(false)}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex items-center justify-center p-6 text-black" onClick={() => setShowArtistList(false)}>
           <div className="bg-white w-full max-w-lg h-[85vh] rounded-[40px] p-8 shadow-2xl flex flex-col space-y-5" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center border-b pb-4 shrink-0 text-black text-black">
-              <h3 className="text-xl font-black uppercase text-black tracking-tighter">Artist Handbook</h3>
+            <div className="flex justify-between items-center border-b pb-4 shrink-0 text-black">
+              <h3 className="text-xl font-black uppercase text-black tracking-tighter text-black">Artist</h3>
               <button onClick={() => setShowArtistList(false)} className="py-2 px-4 bg-zinc-100 rounded-xl text-xs font-bold active:scale-95 text-black">關閉</button>
             </div>
-            <div className="grid grid-cols-2 gap-3 shrink-0 text-black text-black">
-              <div className="flex flex-col gap-1.5 text-black">
-                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1 text-black">舞台篩選</label>
-                <select value={selectedStage} onChange={(e) => setSelectedStage(e.target.value)} className="w-full p-3 border border-zinc-100 rounded-2xl font-bold text-xs outline-none focus:border-[#E85427] appearance-none cursor-pointer text-black" style={{ backgroundColor: selectedStage !== '全部舞台' ? STAGE_THEME[selectedStage]?.bg : '#F4F4F5', color: selectedStage !== '全部舞台' ? STAGE_THEME[selectedStage]?.text : '#000' }}><option value="全部舞台">全部舞台</option>{Object.keys(STAGE_THEME).map(s => (<option key={s} value={s} style={{ backgroundColor: STAGE_THEME[s].bg, color: STAGE_THEME[s].text }}>{s}</option>))}</select>
-              </div>
-              <div className="flex flex-col gap-1.5 text-black">
-                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1 text-black">列表排序</label>
-                <select value={artistSort} onChange={(e) => setArtistSort(e.target.value as any)} className="w-full p-3 bg-zinc-900 text-white border border-zinc-800 rounded-2xl font-bold text-xs outline-none cursor-pointer appearance-none text-white"><option value="time">依照演出時間</option><option value="alphabet">字母 A-Z</option><option value="selected">我的選擇優先</option><option value="popular">隊友最愛優先</option></select>
-              </div>
-            </div>
-            <div className="flex-1 overflow-auto space-y-2 pr-2 custom-scrollbar text-black text-black">
+            {/* 💡 加入 touch-action 優化 */}
+            <div className="flex-1 overflow-auto space-y-2 pr-2 custom-scrollbar text-black" style={{ touchAction: 'pan-y' }}>
               {flatArtistData.map((show: any) => {
                 const isMe = allSelections.some(s => s.user_email === email && String(s.performance_id) === String(show.id));
                 const hasSpotify = SPOTIFY_LINKS[show.id]; 
                 return (
                   <div key={show.id} 
                     onPointerDown={(e) => handlePointerDown(e, show)} 
+                    onPointerMove={handlePointerMove}
                     onPointerUp={(e) => handlePointerUp(e, show)} 
                     className={`p-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${isMe ? 'bg-[#E85427] border-[#E85427] shadow-lg scale-[0.98]' : 'bg-white border-zinc-100 hover:border-zinc-300'}`}
                   >
@@ -465,13 +461,13 @@ export default function Home() {
                         )}
                       </div>
                       <div className={`text-[10px] font-bold flex flex-wrap gap-x-2 gap-y-0.5 ${isMe ? 'text-white/70' : 'text-zinc-400'}`}>
-                        <span className="px-1.5 py-0.5 rounded text-[8px] border border-black/5" style={{ backgroundColor: STAGE_THEME[show.stage]?.bg, color: STAGE_THEME[show.stage]?.text }}>{show.stage}</span>
+                        <span className="px-1.5 py-0.5 rounded text-[8px] border border-black/5 text-black" style={{ backgroundColor: STAGE_THEME[show.stage]?.bg, color: STAGE_THEME[show.stage]?.text }}>{show.stage}</span>
                         <span>{show.date.split('-')[2]}日</span>
                         <span>{show.start}-{show.end}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-black text-black">
-                      <div className="flex -space-x-2 text-black">
+                    <div className="flex items-center gap-2 text-black">
+                      <div className="flex -space-x-2 text-black text-black">
                         {show.attendees.map((attendee: any, idx: number) => {
                           const m = memberList.find(ml => ml.user_email === attendee.user_email);
                           return ( <div key={idx} className="w-6 h-6 rounded-full border border-white flex items-center justify-center font-black text-white text-[8px] shadow-sm text-white" style={{ backgroundColor: m?.user_color || '#000', zIndex: 10 - idx }}>{(m?.user_name || attendee.user_name || '?').charAt(0).toUpperCase()}</div> );
@@ -488,32 +484,32 @@ export default function Home() {
 
       {showMembers && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex items-center justify-center p-6 text-black" onClick={() => setShowMembers(false)}>
-          <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl space-y-6 relative text-black" onClick={e => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl space-y-6 relative text-black text-black" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start border-b pb-4 relative text-black">
               <div className="flex flex-col gap-1.5 pr-16 group text-black">
                 <div className="flex items-center gap-3 text-black">
-                  <span className="text-[10px] font-black text-[#E85427] uppercase tracking-widest shrink-0 text-black">目前小隊</span>
+                  <span className="text-[10px] font-black text-[#E85427] uppercase tracking-widest shrink-0">目前小隊</span>
                   <button onClick={handleCopyInvite} className="flex items-center gap-1 active:scale-95 transition-all text-[#E85427]">
-                    <span className="text-[10px] font-black tracking-tighter text-[#E85427]">🔗 {currentSquad?.invite_code}</span>
-                    <span className="text-[10px] font-black text-[#E85427]">邀請連結</span>
+                    <span className="text-[10px] font-black tracking-tighter">🔗 {currentSquad?.invite_code}</span>
+                    <span className="text-[10px] font-black">邀請連結</span>
                   </button>
                 </div>
                 <div className="flex items-center gap-2 text-black">
                   <h3 className="text-xl font-black uppercase text-black break-all leading-tight text-black">{currentSquad?.squad_name}</h3>
-                  <button onClick={handleRenameSquad} className="p-1.5 hover:bg-zinc-100 rounded-lg transition-colors text-sm text-black">🖊️</button>
+                  <button onClick={handleRenameSquad} className="p-1.5 hover:bg-zinc-100 rounded-lg transition-colors text-sm text-black text-black">🖊️</button>
                 </div>
               </div>
               <button onClick={() => { setCurrentSquad(null); setShowMembers(false); }} className="absolute top-0 right-0 py-2 px-3 bg-zinc-100 hover:bg-black hover:text-white text-black font-bold rounded-xl text-[10px] transition-all active:scale-95 shadow-sm text-black">✕ 回小隊清單</button>
             </div>
-            <div className="space-y-3 max-h-[40vh] overflow-auto pr-2 text-black text-black">
+            <div className="space-y-3 max-h-[40vh] overflow-auto pr-2 text-black text-black text-black">
               {memberList.map((m, i) => (
                 <div key={i} onClick={() => { if(m.user_email !== email) { setCompareMemberEmail(m.user_email === compareMemberEmail ? null : m.user_email); setShowMembers(false); } }} className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${m.user_email === compareMemberEmail ? 'bg-black border-black text-white' : 'bg-zinc-50 border-zinc-100 hover:border-zinc-300'}`}>
-                  <div className="flex items-center gap-3 text-black"><div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-sm" style={{ backgroundColor: m.user_color }}>{m.user_name?.charAt(0).toUpperCase()}</div><span className="font-bold text-sm text-black">{m.user_name} {m.user_email === email && "(我)"}</span></div>
+                  <div className="flex items-center gap-3 text-black"><div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-sm text-white" style={{ backgroundColor: m.user_color }}>{m.user_name?.charAt(0).toUpperCase()}</div><span className="font-bold text-sm text-black">{m.user_name} {m.user_email === email && "(我)"}</span></div>
                 </div>
               ))}
             </div>
             <div className="pt-2 border-t border-zinc-50 text-black">
-              <button onClick={() => { if(confirm(`確定要退出「${currentSquad?.squad_name}」嗎？`)) { supabase.from('squad_members').delete().eq('squad_id', currentSquad.id).eq('user_email', email).then(() => { localStorage.removeItem('megaport_squad_id'); setCurrentSquad(null); setShowMembers(false); fetchMySquads(email); }); } }} className="w-full py-4 bg-zinc-50 hover:bg-red-50 text-red-500 font-black rounded-2xl text-sm transition-colors active:scale-95 text-red-500">退出目前小隊</button>
+              <button onClick={() => { if(confirm(`確定要退出「${currentSquad?.squad_name}」嗎？`)) { supabase.from('squad_members').delete().eq('squad_id', currentSquad.id).eq('user_email', email).then(() => { localStorage.removeItem('megaport_squad_id'); setCurrentSquad(null); setShowMembers(false); fetchMySquads(email); }); } }} className="w-full py-4 bg-zinc-50 hover:bg-red-50 text-red-500 font-black rounded-2xl text-sm transition-colors active:scale-95 text-red-500 text-red-500">退出目前小隊</button>
             </div>
           </div>
         </div>
@@ -521,7 +517,7 @@ export default function Home() {
 
       {detailShow && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[400] flex items-center justify-center p-6 text-black" onClick={() => setDetailShow(null)}>
-          <div className="bg-white w-full max-w-xs rounded-[40px] p-10 shadow-2xl space-y-4 flex flex-col items-center animate-in fade-in zoom-in duration-200 text-black text-black" onClick={e => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-xs rounded-[40px] p-10 shadow-2xl space-y-4 flex flex-col items-center animate-in fade-in zoom-in duration-200 text-black" onClick={e => e.stopPropagation()}>
             <div className="text-center flex flex-col items-center text-black">
               <div className="flex items-center justify-center gap-3 text-black">
                 <h3 className="text-2xl font-black italic underline decoration-[#E85427] tracking-tighter text-black whitespace-pre-line text-black">{detailShow.artist.replace(/\n/g, ' ')}</h3>
@@ -553,37 +549,19 @@ export default function Home() {
 
       {spotifyArtist && <SpotifyModal artist={spotifyArtist} onClose={() => setSpotifyArtist(null)} />}
 
-      {showColorPicker && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[400] flex items-center justify-center p-6 text-black text-black" onClick={() => setShowColorPicker(false)}>
-          <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-black italic underline decoration-[#E85427] text-black">人生音樂版輸出</h3>
-            <div className="flex flex-col gap-4 w-full text-black"><div className="flex justify-between items-center w-full px-2 font-bold text-xs text-black"><span>背景色</span><input type="color" value={wallpaperBg} onChange={e => setWallpaperBg(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer text-black" /></div><div className="flex justify-between items-center w-full px-2 font-bold text-xs text-black"><span>大字色</span><input type="color" value={wallpaperText} onChange={e => setWallpaperText(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer text-black" /></div><div className="w-full pt-2 text-black"><span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block text-black">緊急聯絡電話 (選填 / 零後台)</span><input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-3 border border-zinc-100 bg-zinc-50 rounded-xl font-bold text-sm outline-none focus:border-[#E85427] text-black" /></div></div>
-            <button onClick={() => executeDownload('generated')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-white">確認下載</button><button onClick={() => setShowColorPicker(false)} className="text-zinc-400 font-bold text-xs text-black">取消</button>
-          </div>
-        </div>
-      )}
-
-      {showContactPrompt && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[400] flex items-center justify-center p-6 text-black text-black" onClick={() => setShowContactPrompt(false)}>
-          <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black" onClick={e => e.stopPropagation()}><h3 className="text-xl font-black italic underline decoration-[#E85427] text-black">地圖版輸出</h3><div className="w-full text-center text-black"><span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block text-black">緊急聯絡電話 (選填 / 零後台)</span><input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-4 border border-zinc-100 bg-zinc-50 rounded-2xl font-bold text-center outline-none focus:border-[#E85427] text-black" /></div>
-            <button onClick={() => executeDownload('static')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 text-white">確認下載</button><button onClick={() => setShowContactPrompt(false)} className="text-zinc-400 font-bold text-xs text-black">取消</button>
-          </div>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-auto relative bg-white overflow-auto no-scrollbar text-black text-black">
+      <div className="flex-1 overflow-auto relative bg-white overflow-auto no-scrollbar text-black">
         <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}>
-           <div className="inline-grid p-10 px-20 rounded-3xl text-black text-black" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)' }}>
+           <div className="inline-grid p-10 px-20 rounded-3xl text-black text-black" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)', touchAction: 'pan-y pan-x' }}>
             <div className="bg-[#000000] text-[#FFFFFF] border-b border-r border-zinc-800 flex items-center justify-center font-black text-[42px] text-white" style={{ gridColumn: '1', gridRow: '1', paddingBottom: '20px' }}>{dayNum}</div>
-            {Object.keys(STAGE_THEME).map((s, idx) => (<div key={s} className="sticky top-0 z-40 border-b border-r border-zinc-300 flex items-center justify-center font-black text-[42px] bg-white text-black text-black" style={{ gridColumnStart: idx + 2, backgroundColor: STAGE_THEME[s].bg, paddingBottom: '20px' }}>{s}</div>))}
+            {Object.keys(STAGE_THEME).map((s, idx) => (<div key={s} className="sticky top-0 z-40 border-b border-r border-zinc-300 flex items-center justify-center font-black text-[42px] bg-white text-black" style={{ gridColumnStart: idx + 2, backgroundColor: STAGE_THEME[s].bg, paddingBottom: '20px' }}>{s}</div>))}
             <div className="bg-[#000000] text-[#FFFFFF] border-b border-l border-zinc-800 flex items-center justify-center font-black text-[42px] text-white" style={{ gridColumn: '12', gridRow: '1', paddingBottom: '20px' }}>{dayNum}</div>
             {Object.keys(STAGE_THEME).map((_, idx) => (<div key={`bg-col-${idx}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60' }} className={`pointer-events-none z-0 border-r border-zinc-300 ${idx % 2 === 0 ? 'bg-zinc-200' : 'bg-white'}`}></div>))}
             {Array.from({ length: 57 }).map((_, i) => {
               const minutes = (12 * 60 + 30 + i * 10);
               const timeStr = `${Math.floor(minutes / 60)}:${minutes % 60 === 0 ? '00' : minutes % 60}`;
               return (
-                <div key={`grid-row-${i}`} className="contents text-black text-black">
-                  <div className="sticky left-0 z-40 bg-[#FFF9E1] flex items-center justify-center border-r border-b border-zinc-400 translate-y-[-50%] text-[24px] font-mono font-bold text-zinc-500 text-zinc-500" style={{ gridRowStart: i + 2 }}>{timeStr}</div>
+                <div key={`grid-row-${i}`} className="contents text-black text-black text-black">
+                  <div className="sticky left-0 z-40 bg-[#FFF9E1] flex items-center justify-center border-r border-b border-zinc-400 translate-y-[-50%] text-[24px] font-mono font-bold text-zinc-500" style={{ gridRowStart: i + 2 }}>{timeStr}</div>
                   <div className="bg-[#FFF9E1] flex items-center justify-center border-l border-b border-zinc-400 translate-y-[-50%] text-[24px] font-mono font-bold text-zinc-500 text-zinc-500" style={{ gridRowStart: i + 2, gridColumnStart: 12 }}>{timeStr}</div>
                   {i < 56 && <div className={`pointer-events-none z-10 ${minutes % 60 === 50 ? 'border-b-[4px] border-zinc-500' : 'border-b border-zinc-300'}`} style={{ gridRowStart: i + 2, gridColumn: '2 / 12' }}></div>}
                 </div>
@@ -597,20 +575,21 @@ export default function Home() {
                 const isComparedMember = attendees.some(a => String(a.user_email) === String(compareMemberEmail));
                 const startRow = Math.floor(((Number(show.start.split(':')[0]) * 60 + Number(show.start.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
                 const endRow = Math.floor(((Number(show.end.split(':')[0]) * 60 + Number(show.end.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
+                {/* 💡 修正：細節模式下物理尺寸放大 10% */}
                 const physicalSize = (isOverview ? 14 : 26.4) / zoom; 
                 return (
                   <div key={show.id} 
                     onPointerDown={(e) => handlePointerDown(e, show)} 
+                    onPointerMove={handlePointerMove}
                     onPointerUp={(e) => handlePointerUp(e, show)} 
-                    onPointerLeave={() => { if(longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }} 
                     className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative z-30 transition-all ${isMe ? 'shadow-2xl' : ''}`} 
                     style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: isMe ? '#E85427' : STAGE_THEME[stage].bg, border: isComparedMember ? '8px solid #000000' : 'none', boxSizing: 'border-box' }}
                   >
-                    <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 whitespace-pre-line text-black text-black ${isMe ? 'text-white' : 'text-black'}`}>{show.artist}</p>
+                    <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 whitespace-pre-line text-black ${isMe ? 'text-white' : 'text-black'}`}>{show.artist}</p>
                     <div className={`absolute bottom-1 left-2 max-w-[90%] flex flex-row pointer-events-none overflow-hidden ${isOverview ? '-space-x-3' : '-space-x-1.5'}`}>
                       {attendees.map((f, i) => {
                         const m = memberList.find(ml => ml.user_email === f.user_email);
-                        return ( <div key={i} className="rounded-full flex items-center justify-center font-black text-white border border-black shadow-sm text-white text-white" style={{ backgroundColor: m?.user_color || '#000', width: `${physicalSize}px`, height: `${physicalSize}px`, fontSize: `${physicalSize * 0.45}px`, zIndex: attendees.length - i }}>{(m?.user_name || f.user_name || '?').charAt(0).toUpperCase()}</div> );
+                        return ( <div key={i} className="rounded-full flex items-center justify-center font-black text-white border border-black shadow-sm text-white" style={{ backgroundColor: m?.user_color || '#000', width: `${physicalSize}px`, height: `${physicalSize}px`, fontSize: `${physicalSize * 0.45}px`, zIndex: attendees.length - i }}>{(m?.user_name || f.user_name || '?').charAt(0).toUpperCase()}</div> );
                       })}
                     </div>
                   </div>
