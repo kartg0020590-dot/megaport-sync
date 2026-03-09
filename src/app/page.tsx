@@ -477,7 +477,7 @@ export default function Home() {
       </div>
 
       {/* 💡 三、 獨立浮動組件 (Modal 與 Zoom) */}
-      <div className="fixed bottom-22 right-6 z-[600]">
+      <div className="fixed bottom-21 right-6 z-[600]">
         <button onClick={() => setZoom(zoom === 0.45 ? 0.28 : 0.45)} className="w-14 h-14 bg-white border-2 border-zinc-200 rounded-full shadow-2xl flex items-center justify-center text-2xl active:scale-90 transition-all text-black">
           {zoom > 0.3 ? "🌍" : "🔎"}
         </button>
