@@ -406,7 +406,7 @@ export default function Home() {
             <span className="text-[7px] font-black text-zinc-400 uppercase tracking-tighter">ICON:</span>
             <input type="color" value={userColor} onChange={e => handleMemberColorChange(e.target.value)} className="w-3.5 h-3.5 rounded-full bg-transparent border-none cursor-pointer" />
           </div>
-          <button onClick={() => setZoom(zoom === 0.65 ? 0.28 : 0.65)} className="px-2 py-1.5 bg-zinc-100 rounded-full text-[11px] shadow-sm text-black">{zoom === 0.9 ? "🌍" : "🔎"}</button>
+          <button onClick={() => setZoom(zoom === 0.45 ? 0.28 : 0.45)} className="px-2 py-1.5 bg-zinc-100 rounded-full text-[11px] shadow-sm text-black">{zoom === 0.9 ? "🌍" : "🔎"}</button>
           <div className="flex bg-zinc-100 rounded-lg p-0.5 shadow-sm text-black text-black">
             {['2026-03-21', '2026-03-22'].map(d => (
               <button key={d} onClick={() => { setCurrentDate(d); localStorage.setItem('megaport_current_date', d); }} className={`px-2 py-1.5 rounded-md text-[8px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}</button>
