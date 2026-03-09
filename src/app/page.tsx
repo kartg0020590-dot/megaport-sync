@@ -225,8 +225,19 @@ export default function Home() {
     const savedEmail = localStorage.getItem('megaport_email');
     const savedSquadId = localStorage.getItem('megaport_squad_id');
     const savedDate = localStorage.getItem('megaport_current_date');
+    
+    // 💡 新增：自動抓取網址中的邀請碼
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get('invite');
+    if (codeFromUrl) {
+      setInviteCode(codeFromUrl);
+    }
+
     if (savedDate) setCurrentDate(savedDate);
-    if (savedEmail) { setEmail(savedEmail); fetchMySquads(savedEmail, savedSquadId); }
+    if (savedEmail) { 
+      setEmail(savedEmail); 
+      fetchMySquads(savedEmail, savedSquadId); 
+    }
   }, []);
 
   useEffect(() => { if (currentSquad) { fetchSelections(); fetchSquadMembers(); } }, [currentSquad, currentDate]);
@@ -313,9 +324,15 @@ export default function Home() {
   const handleJoinOrCreate = async (mode: 'join' | 'create') => {
     if (!userName.trim()) return alert('請輸入名稱');
     if (mode === 'join') {
-      const code = new URLSearchParams(window.location.search).get('invite') || inviteCode.trim();
+      // 優先使用輸入框內的 code (這時已經被 useEffect 自動填入了)
+      const code = inviteCode.trim(); 
+      if (!code) return alert('請輸入邀請碼');
+      
       const { data: s } = await supabase.from('squads').select('*').eq('invite_code', code).single();
-      if (s) { await supabase.from('squad_members').upsert([{ squad_id: s.id, user_email: email, user_name: userName, user_color: userColor }]); fetchMySquads(email, s.id); }
+      if (s) { 
+        await supabase.from('squad_members').upsert([{ squad_id: s.id, user_email: email, user_name: userName, user_color: userColor }]); 
+        fetchMySquads(email, s.id); 
+      }
       else alert('邀請碼不正確');
     } else {
       const name = prompt('新小隊名稱：');
