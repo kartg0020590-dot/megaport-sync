@@ -260,16 +260,16 @@ export default function Home() {
     fetchSelections();
   };
 
-// 💡 替換這整塊
+// 💡 覆蓋 handlePointerDown 區塊
   const handlePointerDown = (e: any, show: any) => {
-    if (e.pointerType === 'touch') touchPoints.current += 1;
-    if (touchPoints.current > 1) { hasMovedSignificant.current = true; return; }
-
+    // 儲存起始座標
     pointerStartPos.current = { x: e.clientX, y: e.clientY };
     hasMovedSignificant.current = false;
     isLongPress.current = false;
+
+    // 開啟長按計時器 (500ms)
     longPressTimer.current = setTimeout(() => { 
-      if (!hasMovedSignificant.current && touchPoints.current === 1) {
+      if (!hasMovedSignificant.current) {
         isLongPress.current = true; 
         setDetailShow(show); 
       }
@@ -277,25 +277,39 @@ export default function Home() {
   };
 
   const handlePointerMove = (e: any) => {
+    // 計算手指移動距離
     const dx = Math.abs(e.clientX - pointerStartPos.current.x);
     const dy = Math.abs(e.clientY - pointerStartPos.current.y);
-    if (dx > 25 || dy > 25 || touchPoints.current > 1) {
+    
+    // 如果移動超過 15 像素，判定為滑動/縮放，取消點擊動作
+    if (dx > 15 || dy > 15) {
       hasMovedSignificant.current = true;
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
     }
   };
 
   const handlePointerUp = (e: any, show: any) => {
-    if (e.pointerType === 'touch') touchPoints.current = Math.max(0, touchPoints.current - 1);
-    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
-    if (hasMovedSignificant.current) return;
-    if (!isLongPress.current && touchPoints.current === 0) handleToggle(show); 
+    if (longPressTimer.current) { 
+      clearTimeout(longPressTimer.current); 
+      longPressTimer.current = null; 
+    }
+
+    // 只有在「沒顯著位移」且「不是長按」且「不是縮放」的情況下才選團
+    if (!hasMovedSignificant.current && !isLongPress.current) {
+      handleToggle(show); 
+    }
   };
 
-  // 💡 這是新增的，確保縮放取消後不會誤點
+  // 💡 當瀏覽器偵測到縮放 (Pinch) 或滾動時會觸發 Cancel
   const handlePointerCancel = () => {
-    touchPoints.current = 0;
-    hasMovedSignificant.current = true;
-    if (longPressTimer.current) { clearTimeout(longPressTimer.current); }
+    hasMovedSignificant.current = true; // 強制標記為已移動
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   const handleMemberColorChange = async (c: string) => {
@@ -564,7 +578,7 @@ export default function Home() {
                 const physicalSize = (isOverview ? 14 : 26.4) / zoom; 
 
                 return (
-                  <div key={show.id} onPointerDown={(e) => handlePointerDown(e, show)} onPointerMove={handlePointerMove} onPointerUp={(e) => handlePointerUp(e, show)} 
+                  <div key={show.id} onPointerDown={(e) => handlePointerDown(e, show)} onPointerMove={handlePointerMove} onPointerUp={(e) => handlePointerUp(e, show)} onPointerCancel={handlePointerCancel}
                     className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative z-30 transition-all duration-300 ${isMe && !spotlightActive ? 'shadow-2xl' : ''}`} 
                     style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: finalBg, border: borderStyle, boxSizing: 'border-box', zIndex: (isComparedMember || (isMeSpotlight && isMe)) ? 60 : 30, opacity: opacity, filter: (spotlightActive && !isMe && !isComparedMember) ? 'brightness(0.7) grayscale(20%)' : 'none' }}>
                     <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 whitespace-pre-line ${textColor}`}>{show.artist}</p>
