@@ -154,7 +154,7 @@ export default function Home() {
   const [inviteCode, setInviteCode] = useState('');
   const [allSelections, setAllSelections] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState('2026-03-21');
-  const [zoom, setZoom] = useState(0.28); 
+  const [zoom, setZoom] = useState(0.23); 
   const [showMembers, setShowMembers] = useState(false);
   const [showArtistList, setShowArtistList] = useState(false); 
   const [artistSort, setArtistSort] = useState<'alphabet' | 'selected' | 'popular' | 'time'>('time'); 
