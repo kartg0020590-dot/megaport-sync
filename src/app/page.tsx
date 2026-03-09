@@ -483,7 +483,7 @@ export default function Home() {
           onClick={() => {
             // 如果現在是大於 0.3 (近看模式)，就縮回預設的 0.28 (全覽)
             // 如果現在是 0.28，就放大到 0.45 (近看)
-            setZoom(zoom > 0.3 ? 0.23 : 0.45);
+            setZoom(zoom > 0.3 ? 0.23 : 0.40);
           }} 
           className="w-14 h-14 bg-white border-2 border-zinc-200 rounded-full shadow-2xl flex items-center justify-center text-2xl active:scale-90 transition-all text-black"
         >
