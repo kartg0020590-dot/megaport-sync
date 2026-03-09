@@ -21,7 +21,7 @@ const STAGE_THEME: Record<string, { bg: string, text: string }> = {
   '女神龍': { bg: '#E5B6CD', text: '#000000' }, '海波浪': { bg: '#AFDCE6', text: '#000000' },
   '卡魔麥': { bg: '#EABDB6', text: '#000000' }, '出頭天': { bg: '#EDDBA4', text: '#000000' }, 
   '大雄丸': { bg: '#E8ADB0', text: '#000000' }, '藍寶石': { bg: '#A4C3D8', text: '#000000' }, 
-  '青春夢': { bg: '#ECC3B2', text: '#000000' }, '小港祭': { bg: '#A68C83', text: '#FFFFFF' }
+  '青春夢': { bg: '#ECC3B2', text: '#000000' }, '小港祭': { bg: '#A68C83', text: '#000000' }
 };
 
 const STAGE_THEME_WALLPAPER: Record<string, { bg: string, text: string }> = {
@@ -84,9 +84,11 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
           <div style={{ position: 'relative', zIndex: 10, mixBlendMode: 'overlay', transform: 'scale(0.53)', marginTop: '226px', transformOrigin: 'top center' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '100px repeat(10, 200px) 100px', gridTemplateRows: '80px repeat(56, 45px)', minWidth: '2200px', backgroundColor: 'rgba(255, 255, 255, 0.7)', border: '2px solid rgba(0,0,0,0.2)', position: 'relative' }}>
                 <div style={{ gridColumn: '1', gridRow: '1', backgroundColor: '#000000', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '42px', borderBottom: '1px solid #000', paddingBottom: '60px', zIndex: 110 }}>{dayNum}</div>
-                {Object.keys(STAGE_THEME_WALLPAPER).map((s, idx) => (
-                  <div key={s} style={{ gridColumnStart: idx + 2, gridRow: '1', borderBottom: '1px solid #D1D5DB', borderRight: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '42px', backgroundColor: STAGE_THEME_WALLPAPER[s].bg, color: '#000000', paddingBottom: '45px', zIndex: 110 }}>{s}</div>
-                ))}
+{Object.keys(STAGE_THEME_WALLPAPER).map((s, idx) => (
+  <div key={s} style={{ 
+    gridColumnStart: idx + 2, gridRow: '1', borderBottom: '1px solid #000', borderRight: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '42px', backgroundColor: STAGE_THEME_WALLPAPER[s].bg, color: '#000000', paddingBottom: '45px', zIndex: 110
+  }}>{s}</div>
+))}
                 <div style={{ gridColumn: '12', gridRow: '1', backgroundColor: '#000000', color: '#FFFFFF', borderBottom: '1px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '42px', paddingBottom: '60px', zIndex: 110 }}>{dayNum}</div>
                 {maskMode && <div style={{ gridColumn: '2 / 12', gridRow: '2 / 60', backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 45, pointerEvents: 'none' }} />}
                 {Object.keys(STAGE_THEME_WALLPAPER).map((_, idx) => (<div key={`bg-col-${idx}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60', borderRight: '1px solid #D1D5DB', backgroundColor: idx % 2 === 0 ? 'rgba(161, 161, 170, 0.6)' : 'transparent' }}></div>))}
@@ -94,10 +96,12 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
                 {Array.from({ length: 56 }).map((_, i) => {
                   const minutes = (12 * 60 + 30 + i * 10);
                   const timeStr = `${Math.floor(minutes / 60)}:${minutes % 60 === 0 ? '00' : minutes % 60}`;
+                  const isFullHourLine = timeStr.endsWith(':50');
                   return (
                     <div key={`grid-row-${i}`} className="contents">
                       <div style={{ gridColumn: '1', gridRowStart: i + 2, backgroundColor: '#FFF9E1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #000', borderBottom: '1px solid #D1D5DB', transform: 'translateY(-75%)', fontSize: '24px', fontWeight: 700, color: '#333', zIndex: 105 }}>{timeStr}</div>
                       <div style={{ gridColumn: '12', gridRowStart: i + 2, backgroundColor: '#FFF9E1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid #000', borderBottom: '1px solid #D1D5DB', transform: 'translateY(-75%)', fontSize: '24px', fontWeight: 700, color: '#333', zIndex: 105 }}>{timeStr}</div>
+                      <div style={{ gridRowStart: i + 2, gridColumn: '2 / 12', borderBottom: isFullHourLine ? '3px solid rgba(0,0,0,0.5)' : '1px solid rgba(0,0,0,0.1)', zIndex: 10, pointerEvents: 'none' }}></div>
                     </div>
                   )
                 })}
@@ -112,7 +116,6 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
                     const theme = STAGE_THEME_WALLPAPER[stage];
                     const startRow = Math.floor(((Number(show.start.split(':')[0]) * 60 + Number(show.start.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
                     const endRow = Math.floor(((Number(show.end.split(':')[0]) * 60 + Number(show.end.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
-                    
                     return (
                       <div key={show.id} style={{ 
                         gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', position: 'relative', zIndex: isMeSelected ? 60 : 30, 
@@ -133,13 +136,14 @@ function WallpaperLayout({ date, bgColor, textColor, wallpaperRef, selectedShows
 }
 
 export default function Home() {
+  const [showWallpaperMenu, setShowWallpaperMenu] = useState(false);
   const wallpaperRef = useRef<HTMLDivElement>(null);
   const pointerStartPos = useRef({ x: 0, y: 0 });
   const hasMovedSignificant = useRef(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const isLongPress = useRef(false);
-  const touchPoints = useRef(0);
 
+  const [scrollPos, setScrollPos] = useState({ top: 0, left: 0 });
   const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState('');
   const [userName, setUserName] = useState('');
@@ -260,56 +264,32 @@ export default function Home() {
     fetchSelections();
   };
 
-// 💡 覆蓋 handlePointerDown 區塊
   const handlePointerDown = (e: any, show: any) => {
-    // 儲存起始座標
     pointerStartPos.current = { x: e.clientX, y: e.clientY };
     hasMovedSignificant.current = false;
     isLongPress.current = false;
-
-    // 開啟長按計時器 (500ms)
     longPressTimer.current = setTimeout(() => { 
-      if (!hasMovedSignificant.current) {
-        isLongPress.current = true; 
-        setDetailShow(show); 
-      }
+      if (!hasMovedSignificant.current) { isLongPress.current = true; setDetailShow(show); }
     }, 500); 
   };
 
   const handlePointerMove = (e: any) => {
-    // 計算手指移動距離
     const dx = Math.abs(e.clientX - pointerStartPos.current.x);
     const dy = Math.abs(e.clientY - pointerStartPos.current.y);
-    
-    // 如果移動超過 15 像素，判定為滑動/縮放，取消點擊動作
     if (dx > 15 || dy > 15) {
       hasMovedSignificant.current = true;
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-      }
+      if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
     }
   };
 
   const handlePointerUp = (e: any, show: any) => {
-    if (longPressTimer.current) { 
-      clearTimeout(longPressTimer.current); 
-      longPressTimer.current = null; 
-    }
-
-    // 只有在「沒顯著位移」且「不是長按」且「不是縮放」的情況下才選團
-    if (!hasMovedSignificant.current && !isLongPress.current) {
-      handleToggle(show); 
-    }
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+    if (!hasMovedSignificant.current && !isLongPress.current) { handleToggle(show); }
   };
 
-  // 💡 當瀏覽器偵測到縮放 (Pinch) 或滾動時會觸發 Cancel
   const handlePointerCancel = () => {
-    hasMovedSignificant.current = true; // 強制標記為已移動
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
+    hasMovedSignificant.current = true;
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
   };
 
   const handleMemberColorChange = async (c: string) => {
@@ -383,31 +363,32 @@ export default function Home() {
 
   return (
     <main className="h-screen flex flex-col bg-white overflow-hidden text-black font-sans relative">
-      {/* Header */}
+      {/* 🗺️ 一、 Header 頂部管理導航欄 */}
       <div className="p-4 bg-white border-b border-zinc-300 flex justify-between items-center z-[100] shrink-0 text-black">
-        <div className="flex flex-col text-left leading-none text-black">
-          <div className="flex items-center gap-1.5 cursor-pointer group" onClick={() => setShowMembers(true)}>
-             <span className="font-black text-[12px] uppercase group-hover:text-[#E85427] transition-colors text-black">{currentSquad?.squad_name}</span>
-             {/* 💡 修正：左上角狀態文字變色邏輯 */}
+        <div className="flex-1 flex items-center gap-3 overflow-hidden">
+          <div className="flex items-center gap-1.5 cursor-pointer group shrink-0" onClick={() => setShowMembers(true)}>
+             <span className="font-black text-[12px] uppercase group-hover:text-[#E85427] transition-colors text-black whitespace-nowrap">
+  {currentSquad?.squad_name}
+</span>
              <button className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all shadow-sm ${!compareMemberEmail ? 'bg-zinc-100 text-black' : ''}`}
                style={compareMemberEmail ? { backgroundColor: comparedMember?.user_color, color: '#FFFFFF' } : {}}>
                 <span className="text-[10px]">{compareMemberEmail ? '🎯' : '👥'}</span>
-                <span className={`text-[8px] font-black uppercase tracking-wider ${compareMemberEmail ? 'text-white' : 'text-black'}`}>
-                   {compareMemberEmail ? comparedMember?.user_name : '成員'}
-                </span>
+                <span className={`text-[8px] font-black uppercase tracking-wider ${compareMemberEmail ? 'text-white' : 'text-black'}`}>{compareMemberEmail ? comparedMember?.user_name : '成員'}</span>
              </button>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 text-black">
+        <div className="flex items-center gap-1.5 shrink-0 ml-2 text-black">
           <button onClick={() => setShowArtistList(true)} className="flex items-center gap-1 px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 rounded-full transition-all shadow-sm text-black">
              <span className="text-[10px]">🎸</span><span className="text-[8px] font-black uppercase tracking-wider">ARTISTS</span>
+          </button>
+          <button onClick={() => setShowWallpaperMenu(true)} className="flex items-center gap-1 px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 rounded-full transition-all shadow-sm text-black">
+            <span className="text-[8px] font-black uppercase tracking-wider">生成桌布</span>
           </button>
           <div className="flex items-center gap-1 bg-zinc-50 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm text-black">
             <span className="text-[7px] font-black text-zinc-400 uppercase tracking-tighter">ICON:</span>
             <input type="color" value={userColor} onChange={e => handleMemberColorChange(e.target.value)} className="w-3.5 h-3.5 rounded-full bg-transparent border-none cursor-pointer" />
           </div>
-          <button onClick={() => setZoom(zoom === 0.45 ? 0.28 : 0.45)} className="px-2 py-1.5 bg-zinc-100 rounded-full text-[11px] shadow-sm text-black">{zoom === 0.9 ? "🌍" : "🔎"}</button>
-          <div className="flex bg-zinc-100 rounded-lg p-0.5 shadow-sm text-black text-black">
+          <div className="flex bg-zinc-100 rounded-lg p-0.5 shadow-sm text-black">
             {['2026-03-21', '2026-03-22'].map(d => (
               <button key={d} onClick={() => { setCurrentDate(d); localStorage.setItem('megaport_current_date', d); }} className={`px-2 py-1.5 rounded-md text-[8px] font-black ${currentDate === d ? 'bg-black text-white' : 'text-zinc-400'}`}>{d.split('-')[2]}</button>
             ))}
@@ -415,125 +396,15 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 💡 修正：輸出桌布按鈕位置調高、調右 */}
-      <div className="fixed bottom-24 right-2 z-[300] flex flex-col items-end gap-3 pointer-events-none text-black">
-        <div className="bg-white/80 backdrop-blur-md p-3 rounded-3xl border border-zinc-200 shadow-2xl flex flex-col gap-2 pointer-events-auto text-black">
-          <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest text-center border-b border-zinc-100 pb-1.5 mb-0.5">生成桌布</span>
-          <button onClick={() => { setWallpaperMode('generated'); setShowColorPicker(true); }} className="bg-black text-white px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-lg active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap">📲 人生音樂版</button>
-          <button onClick={() => { setWallpaperMode('static'); setShowContactPrompt(true); }} className="bg-[#E85427] text-white px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-lg active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap">📍 地圖版</button>
-        </div>
-      </div>
-
-      {/* Artists 列表視窗 */}
-      {showArtistList && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-6" onClick={() => setShowArtistList(false)}>
-          <div className="bg-white w-full max-w-lg h-[85vh] rounded-[40px] p-8 shadow-2xl flex flex-col border border-black/10 space-y-5" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center border-b pb-4 shrink-0 text-black">
-              <h3 className="text-xl font-black uppercase tracking-tighter">ARTISTS</h3>
-              <button onClick={() => setShowArtistList(false)} className="py-2 px-4 bg-zinc-100 rounded-xl text-xs font-bold active:scale-95">關閉</button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 shrink-0 text-black">
-              <div className="flex flex-col gap-1.5"><label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">舞台篩選</label><select value={selectedStage} onChange={(e) => setSelectedStage(e.target.value)} className="w-full p-3 border border-zinc-100 bg-white text-black rounded-2xl font-bold text-xs outline-none focus:border-[#E85427] appearance-none cursor-pointer" style={{ backgroundColor: selectedStage !== '全部舞台' ? STAGE_THEME[selectedStage]?.bg : '#FFF' }}><option value="全部舞台">全部舞台</option>{Object.keys(STAGE_THEME).map(s => (<option key={s} value={s} style={{ backgroundColor: STAGE_THEME[s].bg }}>{s}</option>))}</select></div>
-              <div className="flex flex-col gap-1.5"><label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">列表排序</label><select value={artistSort} onChange={(e) => setArtistSort(e.target.value as any)} className="w-full p-3 bg-white text-black border border-zinc-200 rounded-2xl font-bold text-xs outline-none cursor-pointer appearance-none text-black"><option value="time">依照演出時間</option><option value="alphabet">字母 A-Z</option><option value="selected">我的選擇優先</option><option value="popular">隊友最愛優先</option></select></div>
-            </div>
-            <div className="flex-1 overflow-auto space-y-2 pr-2 custom-scrollbar text-black" style={{ touchAction: 'pan-y' }}>
-              {flatArtistData.map((show: any) => {
-                const isMe = allSelections.some(s => s.user_email === email && String(s.performance_id) === String(show.id));
-                const hasLink = SPOTIFY_LINKS[show.id]; 
-                return (
-                  <div key={show.id} onPointerDown={(e) => handlePointerDown(e, show)} onPointerMove={handlePointerMove} onPointerUp={(e) => handlePointerUp(e, show)} className={`p-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${isMe ? 'bg-[#E85427] border-[#E85427] shadow-lg scale-[0.98]' : 'bg-white border-zinc-100 hover:border-zinc-300'}`}>
-                    <div className="flex flex-col gap-1 flex-1 text-black">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm font-black leading-tight ${isMe ? 'text-white' : 'text-black'}`}>{show.artist.replace(/\n/g, ' ')}</span>
-                        {hasLink && <button onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => { e.stopPropagation(); setSpotifyArtist(show); }} className="w-5 h-5 bg-[#C5EBC3] text-black/70 rounded-full flex items-center justify-center shadow-sm shrink-0 active:scale-90 transition-transform"><span className="text-[9px]">🔗</span></button>}
-                      </div>
-                      <div className={`text-[10px] font-bold flex flex-wrap gap-x-2 gap-y-0.5 ${isMe ? 'text-white/70' : 'text-zinc-400'}`}><span className="px-1.5 py-0.5 rounded text-[8px] border border-black/5" style={{ backgroundColor: STAGE_THEME[show.stage]?.bg, color: STAGE_THEME[show.stage]?.text }}>{show.stage}</span><span>{show.date.split('-')[2]}日</span><span>{show.start}-{show.end}</span></div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex -space-x-2">
-                        {show.attendees.map((attendee: any, idx: number) => {
-                          const m = memberList.find(ml => ml.user_email === attendee.user_email);
-                          return ( <div key={idx} className="w-6 h-6 rounded-full border border-white flex items-center justify-center font-black text-white text-[8px] shadow-sm" style={{ backgroundColor: m?.user_color || '#000', zIndex: 10 - idx }}>{(m?.user_name || attendee.user_name || '?').charAt(0).toUpperCase()}</div> );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showMembers && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex items-center justify-center p-6 text-black" onClick={() => setShowMembers(false)}>
-          <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl space-y-6 relative text-black" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-start border-b pb-4 relative text-black">
-              <div className="flex flex-col gap-1.5 pr-16 group text-black">
-                <div className="flex items-center gap-3 text-[#E85427]">
-                  <span className="text-[10px] font-black uppercase tracking-widest shrink-0">目前小隊</span>
-                  <button onClick={handleCopyInvite} className="flex items-center gap-1 active:scale-95 transition-all">
-                    <span className="text-[10px] font-black tracking-tighter">🔗 {currentSquad?.invite_code}</span>
-                    <span className="text-[10px] font-black">邀請連結</span>
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 text-black">
-                  <h3 className="text-xl font-black uppercase break-all leading-tight text-black">{currentSquad?.squad_name}</h3>
-                  <button onClick={handleRenameSquad} className="px-2 py-1 bg-zinc-100 hover:bg-zinc-200 rounded-md transition-all text-[10px] font-black">變更</button>
-                </div>
-              </div>
-              <button onClick={() => { setCurrentSquad(null); setShowMembers(false); }} className="absolute top-0 right-0 py-2 px-3 bg-zinc-100 hover:bg-black hover:text-white text-black font-bold rounded-xl text-[10px] transition-all active:scale-95 shadow-sm text-black">✕ 回小隊清單</button>
-            </div>
-            <div className="space-y-3 max-h-[40vh] overflow-auto pr-2 text-black">
-              {memberList.map((m, i) => (
-                <div key={i} onClick={() => { if(m.user_email !== email) { setCompareMemberEmail(m.user_email === compareMemberEmail ? null : m.user_email); setShowMembers(false); } }} 
-                  className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${m.user_email === compareMemberEmail ? 'bg-[#E85427] border-[#E85427] text-white shadow-lg' : 'bg-zinc-50 border-zinc-100 hover:border-zinc-300'}`}>
-                   <div className="flex items-center gap-3 text-black"><div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-sm text-white" style={{ backgroundColor: m.user_color }}>{m.user_name?.charAt(0).toUpperCase()}</div><span className={`font-bold text-sm ${m.user_email === compareMemberEmail ? 'text-white' : 'text-black'}`}>{m.user_name} {m.user_email === email && "(我)"}</span></div>
-                </div>
-              ))}
-            </div>
-            <div className="pt-2 border-t border-zinc-50 text-black">
-              <button onClick={() => { if(confirm(`確定要退出「${currentSquad?.squad_name}」嗎？`)) { supabase.from('squad_members').delete().eq( 'squad_id', currentSquad.id).eq('user_email', email).then(() => { localStorage.removeItem('megaport_squad_id'); setCurrentSquad(null); setShowMembers(false); fetchMySquads(email); }); } }} className="w-full py-4 bg-zinc-50 hover:bg-red-50 text-red-500 font-black rounded-2xl text-sm transition-colors active:scale-95">退出目前小隊</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {detailShow && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[400] flex items-center justify-center p-6 text-black" onClick={() => setDetailShow(null)}>
-          <div className="bg-white w-full max-w-xs rounded-[40px] p-10 shadow-2xl space-y-4 flex flex-col items-center animate-in fade-in zoom-in duration-200 text-black" onClick={e => e.stopPropagation()}>
-            <div className="text-center flex flex-col items-center text-black">
-              <div className="flex items-center justify-center gap-3">
-                <h3 className="text-2xl font-black italic underline decoration-[#E85427] tracking-tighter whitespace-pre-line text-black">{detailShow.artist.replace(/\n/g, ' ')}</h3>
-                {SPOTIFY_LINKS[detailShow.id] && <button onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => { e.stopPropagation(); setSpotifyArtist(detailShow); }} className="w-6 h-6 bg-[#C5EBC3] text-black/70 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0"><span className="text-[10px]">🔗</span></button>}
-              </div>
-              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mt-1">{detailShow.start} — {detailShow.end}</p>
-            </div>
-            <div className="w-full bg-zinc-50 rounded-3xl p-6 flex flex-col max-h-[50vh] overflow-hidden text-black">
-              <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest block mb-4">已選取隊友 (點選可對照)</span>
-              <div className="space-y-3 overflow-y-auto custom-scrollbar pr-1">
-                {allSelections.filter(s => String(s.performance_id) === String(detailShow.id)).map((attendee, idx) => {
-                  const m = memberList.find(ml => ml.user_email === attendee.user_email);
-                  return (
-                    <div key={idx} onClick={() => { if(attendee.user_email !== email) { setCompareMemberEmail(attendee.user_email === compareMemberEmail ? null : attendee.user_email); setDetailShow(null); } }} 
-                      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all ${attendee.user_email === compareMemberEmail ? 'bg-[#E85427] text-white shadow-md' : ''}`}>
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-[10px] shadow-sm" style={{ backgroundColor: m?.user_color || '#000' }}>{(m?.user_name || attendee.user_name || '?').charAt(0).toUpperCase()}</div><span className={`font-bold text-sm ${attendee.user_email === compareMemberEmail ? 'text-white' : 'text-black'}`}>{m?.user_name || attendee.user_name}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <button onClick={() => setDetailShow(null)} className="w-full py-4 bg-black text-white rounded-2xl font-black shadow-lg">返回團序</button>
-          </div>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-auto relative bg-white no-scrollbar text-black text-black">
-        <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}>
-           <div className="inline-grid p-10 px-20 rounded-3xl text-black" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)', touchAction: 'pan-y pan-x', position: 'relative' }}>
-            <div className="bg-[#000000] text-[#FFFFFF] border-b border-r border-zinc-800 flex items-center justify-center font-black text-[42px] text-white" style={{ gridColumn: '1', gridRow: '1', paddingBottom: '20px', zIndex: 110 }}>{dayNum}</div>
-            {Object.keys(STAGE_THEME).map((s, idx) => (<div key={s} className="sticky top-0 z-[120] border-b border-r border-zinc-300 flex items-center justify-center font-black text-[42px] bg-white text-black" style={{ gridColumnStart: idx + 2, backgroundColor: STAGE_THEME[s].bg, paddingBottom: '20px' }}>{s}</div>))}
-            <div className="bg-[#000000] text-[#FFFFFF] border-b border-l border-zinc-800 flex items-center justify-center font-black text-[42px] text-white" style={{ gridColumn: '12', gridRow: '1', paddingBottom: '20px', zIndex: 110 }}>{dayNum}</div>
+      {/* 🗺️ 二、 大港課表主地圖 */}
+      <div className="flex-1 overflow-auto relative bg-white no-scrollbar" onScroll={(e) => setScrollPos({ top: e.currentTarget.scrollTop, left: e.currentTarget.scrollLeft })}>
+        <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%`, position: 'relative' }}>
+          <div className="inline-grid p-10 px-20 rounded-3xl" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)', touchAction: 'pan-y pan-x', position: 'relative' }}>
+            <div className="bg-black text-white border-b border-r border-zinc-800 flex items-center justify-center font-black text-[42px] z-[500]" style={{ gridColumn: '1', gridRow: '1', paddingBottom: '20px', transform: `translate(${scrollPos.left / zoom}px, ${scrollPos.top / zoom}px)`, position: 'relative' }}>{dayNum}</div>
+            {Object.keys(STAGE_THEME).map((s, idx) => (
+              <div key={s} className="flex items-center justify-center font-black text-[42px] z-[400] border border-black" style={{ gridColumnStart: idx + 2, gridRow: '1', backgroundColor: STAGE_THEME[s].bg, color: STAGE_THEME[s].text, paddingBottom: '20px', borderBottom: '1px solid #000000', transform: `translateY(${scrollPos.top / zoom}px)`, position: 'relative' }}>{s}</div>
+            ))}
+            <div className="bg-black text-white border-b border-l border-zinc-800 flex items-center justify-center font-black text-[42px] z-[400]" style={{ gridColumn: '12', gridRow: '1', paddingBottom: '20px', transform: `translateY(${scrollPos.top / zoom}px)`, position: 'relative' }}>{dayNum}</div>
             {Object.keys(STAGE_THEME).map((_, idx) => (<div key={`bg-col-${idx}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60' }} className={`pointer-events-none z-0 border-r border-zinc-300 ${idx % 2 === 0 ? 'bg-zinc-200' : 'bg-white'}`}></div>))}
             {compareMemberEmail && <div className="pointer-events-none transition-opacity duration-500" style={{ gridRow: '2 / 60', gridColumn: '2 / 12', backgroundColor: 'rgba(0, 0, 0, 0.3)', zIndex: 45 }} />}
             {Array.from({ length: 57 }).map((_, i) => {
@@ -541,8 +412,12 @@ export default function Home() {
               const timeStr = `${Math.floor(minutes / 60)}:${minutes % 60 === 0 ? '00' : minutes % 60}`;
               return (
                 <div key={`grid-row-${i}`} className="contents text-black">
-                  <div className="sticky left-0 z-[100] bg-[#FFF9E1] flex items-center justify-center border-r border-b border-zinc-400 translate-y-[-50%] text-[24px] font-mono font-bold text-zinc-500" style={{ gridRowStart: i + 2, gridColumn: '1' }}>{timeStr}</div>
-                  <div className="bg-[#FFF9E1] flex items-center justify-center border-l border-b border-zinc-400 translate-y-[-50%] text-[24px] font-mono font-bold text-zinc-500" style={{ gridRowStart: i + 2, gridColumn: '12', zIndex: 100 }}>{timeStr}</div>
+                  <div className="flex items-center justify-center z-[300]" style={{ gridRowStart: i + 2, gridColumn: '1', transform: `translateX(${scrollPos.left / zoom}px) translateY(-50%)`, position: 'relative', height: '0px' }}>
+                    <span className="bg-[#FFF9E1] px-4 py-1 border border-zinc-400 font-mono font-bold text-[24px] text-zinc-500 rounded-sm">{timeStr}</span>
+                  </div>
+                  <div className="flex items-center justify-center z-[300]" style={{ gridRowStart: i + 2, gridColumn: '12', transform: `translateY(-50%)`, position: 'relative', height: '0px' }}>
+                    <span className="bg-[#FFF9E1] px-4 py-1 border border-zinc-400 font-mono font-bold text-[24px] text-zinc-500 rounded-sm">{timeStr}</span>
+                  </div>
                   {i < 56 && <div className={`pointer-events-none z-10 ${minutes % 60 === 50 ? 'border-b-[4px] border-zinc-500' : 'border-b border-zinc-300'}`} style={{ gridRowStart: i + 2, gridColumn: '2 / 12' }}></div>}
                 </div>
               )
@@ -556,51 +431,17 @@ export default function Home() {
                 const spotlightActive = compareMemberEmail !== null;
                 const isMeSpotlight = compareMemberEmail === email;
                 const isFriendSpotlight = spotlightActive && !isMeSpotlight;
-
-                let finalBg = STAGE_THEME[stage].bg;
-                let textColor = 'text-black';
-                let borderStyle = 'none';
-                let opacity = 1;
-
-                if (isMeSpotlight) {
-                   if (isMe) { finalBg = STAGE_THEME[stage].bg; borderStyle = '6px solid #000000'; } 
-                   else { opacity = 0.5; textColor = 'text-black/40'; }
-                } else if (isFriendSpotlight) {
-                   if (isComparedMember) { finalBg = STAGE_THEME[stage].bg; borderStyle = '6px solid #000000'; }
-                   if (isMe) { finalBg = '#E85427'; textColor = 'text-white'; } 
-                   if (!isMe && !isComparedMember) { opacity = 0.5; textColor = 'text-black/40'; }
-                } else if (isMe) {
-                   finalBg = '#E85427'; textColor = 'text-white';
-                }
-
+                let finalBg = STAGE_THEME[stage].bg; let textColor = 'text-black'; let borderStyle = 'none'; let opacity = 1;
+                if (isMeSpotlight) { if (isMe) { finalBg = STAGE_THEME[stage].bg; borderStyle = '6px solid #000000'; } else { opacity = 0.5; textColor = 'text-black/40'; } }
+                else if (isFriendSpotlight) { if (isComparedMember) { finalBg = STAGE_THEME[stage].bg; borderStyle = '6px solid #000000'; } if (isMe) { finalBg = '#E85427'; textColor = 'text-white'; } if (!isMe && !isComparedMember) { opacity = 0.5; textColor = 'text-black/40'; } }
+                else if (isMe) { finalBg = '#E85427'; textColor = 'text-white'; }
                 const startRow = Math.floor(((Number(show.start.split(':')[0]) * 60 + Number(show.start.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
                 const endRow = Math.floor(((Number(show.end.split(':')[0]) * 60 + Number(show.end.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
                 const physicalSize = (isOverview ? 14 : 26.4) / zoom; 
-
                 return (
-                  <div key={show.id} 
-                    onPointerDown={(e) => handlePointerDown(e, show)} 
-                    onPointerMove={handlePointerMove} 
-                    onPointerUp={(e) => handlePointerUp(e, show)} 
-                    onPointerCancel={handlePointerCancel}
-                    // 💡 修正 1：在 className 加入 select-none
-                    className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative z-30 transition-all duration-300 select-none ${isMe && !spotlightActive ? 'shadow-2xl' : ''}`} 
-                    style={{ 
-                      gridRow: `${startRow} / ${endRow}`, 
-                      gridColumnStart: colIndex + 2, 
-                      backgroundColor: finalBg, 
-                      border: borderStyle, 
-                      boxSizing: 'border-box', 
-                      zIndex: (isComparedMember || (isMeSpotlight && isMe)) ? 60 : 30, 
-                      opacity: opacity, 
-                      filter: (spotlightActive && !isMe && !isComparedMember) ? 'brightness(0.7) grayscale(20%)' : 'none',
-                      // 💡 修正 2：將這些屬性移入 style 大括號內，並加上逗號
-                      WebkitTouchCallout: 'none',
-                      WebkitUserSelect: 'none',
-                      userSelect: 'none',
-                      touchAction: 'pan-y pan-x' 
-                    }}
-                  >
+                  <div key={show.id} onPointerDown={(e) => handlePointerDown(e, show)} onPointerMove={handlePointerMove} onPointerUp={(e) => handlePointerUp(e, show)} onPointerCancel={handlePointerCancel}
+                    className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative transition-all duration-300 select-none ${isMe && !spotlightActive ? 'shadow-2xl' : ''}`} 
+                    style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: finalBg, border: borderStyle, boxSizing: 'border-box', zIndex: (isComparedMember || (isMeSpotlight && isMe)) ? 60 : 30, opacity: opacity, filter: (spotlightActive && !isMe && !isComparedMember) ? 'brightness(0.7) grayscale(20%)' : 'none', touchAction: 'pan-y pan-x' }}>
                     <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 whitespace-pre-line ${textColor}`}>{show.artist}</p>
                     {(isMe || (spotlightActive && isComparedMember) || !spotlightActive) && (
                       <div className={`absolute bottom-1 left-2 max-w-[90%] flex flex-row pointer-events-none overflow-hidden ${isOverview ? '-space-x-3' : '-space-x-1.5'}`}>
@@ -618,41 +459,164 @@ export default function Home() {
         </div>
       </div>
 
-     {/* 💡 底部懸浮主控台 - 空間優化橫移版 */}
-<div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-zinc-200 z-[500] px-4 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] text-black">
-  <div className="w-full flex flex-col items-start mx-auto" style={{ maxWidth: 'min(100vw, 2200px)' }}>
-    
-    {/* 隊友按鈕列：加上 py-2 提供黑圈空間，外層容器則用 py-2 抵銷高度 */}
-    <div className="w-full flex flex-nowrap overflow-x-auto no-scrollbar justify-start items-center gap-2 py-2">
-      {sortedMemberList.map((m, i) => (
-        <button key={i} onClick={() => setCompareMemberEmail(compareMemberEmail === m.user_email ? null : m.user_email)}
-          className={`flex items-center justify-center px-3 py-1.5 rounded-full border-2 transition-all shrink-0 active:scale-95 text-white ${compareMemberEmail === m.user_email ? 'ring-2 ring-black ring-offset-1 scale-105' : 'border-black/5'}`}
-          style={{ backgroundColor: m.user_color, color: '#FFFFFF', borderColor: '#000000' }}>
-          <span className="text-[8px] font-black uppercase tracking-tight whitespace-nowrap">{m.user_name} {m.user_email === email && "(我)"}</span>
+      {/* 💡 三、 獨立浮動組件 (Modal 與 Zoom) */}
+      <div className="fixed bottom-22 right-6 z-[600]">
+        <button onClick={() => setZoom(zoom === 0.45 ? 0.28 : 0.45)} className="w-14 h-14 bg-white border-2 border-zinc-200 rounded-full shadow-2xl flex items-center justify-center text-2xl active:scale-90 transition-all text-black">
+          {zoom > 0.3 ? "🌍" : "🔎"}
         </button>
-      ))}
-    </div>
+      </div>
 
-    {/* 提示語區：稍微縮小間距 */}
-    <div className="flex flex-col text-zinc-400 font-bold italic leading-tight text-left pb-1">
-       <span className="text-[8px]">💡 提示：長按表演項目可查看詳細名單</span>
-       <span className="text-[8px] mt-0.5">💡 提示：點選成員框框可以查看特定成員團序</span>
-    </div>
-  </div>
-</div>
+      {showWallpaperMenu && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[800] flex items-center justify-center p-6" onClick={() => setShowWallpaperMenu(false)}>
+          <div className="bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl flex flex-col items-center space-y-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-black italic underline decoration-[#E85427] mb-2 text-black">選擇輸出版本</h3>
+            <button onClick={() => { setWallpaperMode('generated'); setShowColorPicker(true); setShowWallpaperMenu(false); }} className="w-full bg-black text-white py-4 rounded-2xl font-black text-xs shadow-lg active:scale-95 transition-all text-white">📲 人生音樂版</button>
+            <button onClick={() => { setWallpaperMode('static'); setShowContactPrompt(true); setShowWallpaperMenu(false); }} className="w-full bg-[#E85427] text-white py-4 rounded-2xl font-black text-xs shadow-lg active:scale-95 transition-all text-white">📍 地圖版</button>
+            <button onClick={() => setShowWallpaperMenu(false)} className="text-zinc-400 font-bold text-xs pt-2">取消</button>
+          </div>
+        </div>
+      )}
+
+      {/* 📜 Artist 列表視窗 */}
+      {showArtistList && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm" onClick={() => setShowArtistList(false)}>
+          <div className="bg-white w-full max-w-lg h-[85vh] rounded-[40px] p-8 shadow-2xl flex flex-col border border-black/10" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center border-b pb-4 shrink-0 text-black">
+              <h3 className="text-xl font-black uppercase tracking-tighter">ARTISTS</h3>
+              <button onClick={() => setShowArtistList(false)} className="py-2 px-4 bg-zinc-100 rounded-xl text-xs font-bold active:scale-95 text-black">關閉</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 py-4 shrink-0">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">舞台篩選</label>
+                <select value={selectedStage} onChange={(e) => setSelectedStage(e.target.value)} className="w-full p-3 border border-zinc-100 bg-white text-black rounded-2xl font-bold text-xs outline-none focus:border-[#E85427] appearance-none cursor-pointer" style={{ backgroundColor: selectedStage !== '全部舞台' ? STAGE_THEME[selectedStage]?.bg : '#F4F4F5' }}>
+                  <option value="全部舞台">全部舞台</option>
+                  {Object.keys(STAGE_THEME).map(s => (<option key={s} value={s} style={{ backgroundColor: STAGE_THEME[s].bg }}>{s}</option>))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">列表排序</label>
+                <select value={artistSort} onChange={(e) => setArtistSort(e.target.value as any)} className="w-full p-3 bg-zinc-50 text-black border border-zinc-200 rounded-2xl font-bold text-xs outline-none cursor-pointer appearance-none">
+                  <option value="time">依照演出時間</option>
+                  <option value="alphabet">字母 A-Z</option>
+                  <option value="selected">我的選擇優先</option>
+                  <option value="popular">隊友最愛優先</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+              {flatArtistData.map((show: any) => {
+                const isMe = allSelections.some(s => s.user_email === email && String(s.performance_id) === String(show.id));
+                const hasLink = SPOTIFY_LINKS[show.id]; 
+                return (
+                  <div key={show.id} onPointerDown={(e) => handlePointerDown(e, show)} onPointerMove={handlePointerMove} onPointerUp={(e) => handlePointerUp(e, show)} className={`p-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${isMe ? 'bg-[#E85427] border-[#E85427] shadow-lg scale-[0.98]' : 'bg-white border-zinc-100 hover:border-zinc-300'}`}>
+                    <div className="flex flex-col gap-1 flex-1 text-black">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-black leading-tight ${isMe ? 'text-white' : 'text-black'}`}>{show.artist.replace(/\n/g, ' ')}</span>
+                        {hasLink && <button onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => { e.stopPropagation(); setSpotifyArtist(show); }} className="w-5 h-5 bg-[#C5EBC3] text-black/70 rounded-full flex items-center justify-center shadow-sm shrink-0 active:scale-90"><span className="text-[9px]">🔗</span></button>}
+                      </div>
+                      <div className={`text-[10px] font-bold flex flex-wrap gap-x-2 gap-y-0.5 ${isMe ? 'text-white/70' : 'text-zinc-400'}`}>
+                        <span className="px-1.5 py-0.5 rounded text-[8px] border border-black/5" style={{ backgroundColor: STAGE_THEME[show.stage]?.bg, color: STAGE_THEME[show.stage]?.text }}>{show.stage}</span>
+                        <span>{show.date.split('-')[2]}日</span><span>{show.start}-{show.end}</span>
+                      </div>
+                    </div>
+                    <div className="flex -space-x-2">
+                      {show.attendees.map((attendee: any, idx: number) => {
+                        const m = memberList.find(ml => ml.user_email === attendee.user_email);
+                        return ( <div key={idx} className="w-6 h-6 rounded-full border border-white flex items-center justify-center font-black text-white text-[8px] shadow-sm" style={{ backgroundColor: m?.user_color || '#000', zIndex: 10 - idx }}>{(m?.user_name || attendee.user_name || '?').charAt(0).toUpperCase()}</div> );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 💡 底部懸浮主控台 - 空間優化橫移版 */}
+      <div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-zinc-200 z-[500] px-4 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] text-black">
+        <div className="w-full flex flex-col items-start mx-auto" style={{ maxWidth: 'min(100vw, 2200px)' }}>
+          
+          {/* 隊友按鈕列 */}
+          <div className="w-full flex flex-nowrap overflow-x-auto no-scrollbar justify-start items-center gap-2 py-2">
+            {sortedMemberList.map((m, i) => (
+              <button key={i} onClick={() => setCompareMemberEmail(compareMemberEmail === m.user_email ? null : m.user_email)}
+                className={`flex items-center justify-center px-3 py-1.5 rounded-full border-2 transition-all shrink-0 active:scale-95 text-white ${compareMemberEmail === m.user_email ? 'ring-2 ring-black ring-offset-1 scale-105' : 'border-black/5'}`}
+                style={{ backgroundColor: m.user_color, color: '#FFFFFF', borderColor: '#000000' }}>
+                <span className="text-[8px] font-black uppercase tracking-tight whitespace-nowrap">{m.user_name} {m.user_email === email && "(我)"}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* 💡 提示語區：已恢復為原本的兩行內容 */}
+          <div className="flex flex-col text-zinc-400 font-bold italic leading-tight text-left pb-1">
+             <span className="text-[8px]">💡 提示：長按表演項目可查看詳細名單，點選成員框框可以查看特定成員團序</span>
+          </div>
+        </div>
+      </div>
+
+      {showMembers && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex items-center justify-center p-6 text-black" onClick={() => setShowMembers(false)}>
+          <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl space-y-6 relative text-black" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-start border-b pb-4 relative text-black">
+              <div className="flex flex-col gap-1.5 pr-16 group text-black">
+                <div className="flex items-center gap-3 text-[#E85427]">
+                  <span className="text-[10px] font-black uppercase tracking-widest shrink-0">目前小隊</span>
+                  <button onClick={handleCopyInvite} className="flex items-center gap-1 active:scale-95 transition-all"><span className="text-[10px] font-black tracking-tighter">🔗 {currentSquad?.invite_code}</span><span className="text-[10px] font-black">邀請連結</span></button>
+                </div>
+                <div className="flex items-center gap-2 text-black"><h3 className="text-xl font-black uppercase break-all leading-tight text-black">{currentSquad?.squad_name}</h3><button onClick={handleRenameSquad} className="px-2 py-1 bg-zinc-100 hover:bg-zinc-200 rounded-md transition-all text-[10px] font-black text-black">變更</button></div>
+              </div>
+              <button onClick={() => { setCurrentSquad(null); setShowMembers(false); }} className="absolute top-0 right-0 py-2 px-3 bg-zinc-100 hover:bg-black hover:text-white text-black font-bold rounded-xl text-[10px] transition-all active:scale-95 shadow-sm text-black">✕ 回清單</button>
+            </div>
+            <div className="space-y-3 max-h-[40vh] overflow-auto pr-2 text-black">
+              {memberList.map((m, i) => (
+                <div key={i} onClick={() => { if(m.user_email !== email) { setCompareMemberEmail(m.user_email === compareMemberEmail ? null : m.user_email); setShowMembers(false); } }} 
+                  className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${m.user_email === compareMemberEmail ? 'bg-[#E85427] border-[#E85427] text-white shadow-lg' : 'bg-zinc-50 border-zinc-100 hover:border-zinc-300'}`}>
+                   <div className="flex items-center gap-3 text-black"><div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-sm text-white" style={{ backgroundColor: m.user_color }}>{m.user_name?.charAt(0).toUpperCase()}</div><span className={`font-bold text-sm ${m.user_email === compareMemberEmail ? 'text-white' : 'text-black'}`}>{m.user_name} {m.user_email === email && "(我)"}</span></div>
+                </div>
+              ))}
+            </div>
+            <div className="pt-2 border-t border-zinc-50 text-black"><button onClick={() => { if(confirm(`確定要退出「${currentSquad?.squad_name}」嗎？`)) { supabase.from('squad_members').delete().eq( 'squad_id', currentSquad.id).eq('user_email', email).then(() => { localStorage.removeItem('megaport_squad_id'); setCurrentSquad(null); setShowMembers(false); fetchMySquads(email); }); } }} className="w-full py-4 bg-zinc-50 hover:bg-red-50 text-red-500 font-black rounded-2xl text-sm transition-colors active:scale-95 text-red-500">退出目前小隊</button></div>
+          </div>
+        </div>
+      )}
+
+      {detailShow && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[400] flex items-center justify-center p-6 text-black" onClick={() => setDetailShow(null)}>
+          <div className="bg-white w-full max-w-xs rounded-[40px] p-10 shadow-2xl space-y-4 flex flex-col items-center animate-in fade-in zoom-in duration-200 text-black" onClick={e => e.stopPropagation()}>
+            <div className="text-center flex flex-col items-center text-black">
+              <div className="flex items-center justify-center gap-3"><h3 className="text-2xl font-black italic underline decoration-[#E85427] tracking-tighter whitespace-pre-line text-black">{detailShow.artist.replace(/\n/g, ' ')}</h3>{SPOTIFY_LINKS[detailShow.id] && <button onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => { e.stopPropagation(); setSpotifyArtist(detailShow); }} className="w-6 h-6 bg-[#C5EBC3] text-black/70 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0"><span className="text-[10px]">🔗</span></button>}</div>
+              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mt-1">{detailShow.start} — {detailShow.end}</p>
+            </div>
+            <div className="w-full bg-zinc-50 rounded-3xl p-6 flex flex-col max-h-[50vh] overflow-hidden text-black">
+              <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest block mb-4 text-zinc-400">已選取隊友 (點選可對照)</span>
+              <div className="space-y-3 overflow-y-auto custom-scrollbar pr-1">
+                {allSelections.filter(s => String(s.performance_id) === String(detailShow.id)).map((attendee, idx) => {
+                  const m = memberList.find(ml => ml.user_email === attendee.user_email);
+                  return (
+                    <div key={idx} onClick={() => { if(attendee.user_email !== email) { setCompareMemberEmail(attendee.user_email === compareMemberEmail ? null : attendee.user_email); setDetailShow(null); } }} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all ${attendee.user_email === compareMemberEmail ? 'bg-[#E85427] text-white shadow-md' : ''}`}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-[10px] shadow-sm" style={{ backgroundColor: m?.user_color || '#000' }}>{(m?.user_name || attendee.user_name || '?').charAt(0).toUpperCase()}</div><span className={`font-bold text-sm ${attendee.user_email === compareMemberEmail ? 'text-white' : 'text-black'}`}>{m?.user_name || attendee.user_name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <button onClick={() => setDetailShow(null)} className="w-full py-4 bg-black text-white rounded-2xl font-black shadow-lg text-white">返回團序</button>
+          </div>
+        </div>
+      )}
 
       {spotifyArtist && <SpotifyModal artist={spotifyArtist} onClose={() => setSpotifyArtist(null)} />}
-
       <WallpaperLayout date={currentDate} bgColor={wallpaperBg} textColor={wallpaperText} wallpaperRef={wallpaperRef} selectedShows={allSelections.filter(s => s.user_email === email && String(s.performance_id).includes(currentDate.split('-')[2]))} mode={wallpaperMode} contactInfo={contactNumber} maskMode={onlyMeWallpaper} />
       
       {showColorPicker && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[800] flex items-center justify-center p-6 text-black" onClick={() => setShowColorPicker(false)}>
           <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-black italic underline decoration-[#E85427]">人生音樂版輸出</h3>
+            <h3 className="text-xl font-black italic underline decoration-[#E85427] text-black">人生音樂版輸出</h3>
             <div className="flex flex-col gap-4 w-full text-black">
               <div className="flex justify-between items-center w-full px-2 font-bold text-xs text-black"><span>背景色</span><input type="color" value={wallpaperBg} onChange={e => setWallpaperBg(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div>
-              <div className="flex justify-between items-center w-full px-2 font-bold text-xs text-black text-black"><span>大字色</span><input type="color" value={wallpaperText} onChange={e => setWallpaperText(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div>
-              <div className="flex justify-between items-center w-full px-2 pt-2 border-t border-zinc-100"><span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">輸出個人聚焦版</span><button onClick={() => setOnlyMeWallpaper(!onlyMeWallpaper)} className={`w-10 h-5 rounded-full transition-all relative ${onlyMeWallpaper ? 'bg-black' : 'bg-zinc-200'}`}><div className={`w-3 h-3 bg-white rounded-full absolute top-1 transition-all ${onlyMeWallpaper ? 'left-6' : 'left-1'}`} /></button></div>
+              <div className="flex justify-between items-center w-full px-2 font-bold text-xs text-black"><span>大字色</span><input type="color" value={wallpaperText} onChange={e => setWallpaperText(e.target.value)} className="w-8 h-8 rounded-full bg-transparent border-none cursor-pointer" /></div>
+              <div className="flex justify-between items-center w-full px-2 pt-2 border-t border-zinc-100 text-black"><span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">輸出個人聚焦版</span><button onClick={() => setOnlyMeWallpaper(!onlyMeWallpaper)} className={`w-10 h-5 rounded-full transition-all relative ${onlyMeWallpaper ? 'bg-black' : 'bg-zinc-200'}`}><div className={`w-3 h-3 bg-white rounded-full absolute top-1 transition-all ${onlyMeWallpaper ? 'left-6' : 'left-1'}`} /></button></div>
               <div className="w-full pt-2 text-black"><span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block text-black">緊急聯絡電話 (選填 / 零後台)</span><input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-3 border border-zinc-100 bg-zinc-50 rounded-xl font-bold text-sm outline-none focus:border-[#E85427] text-black" /></div>
             </div>
             <button onClick={() => executeDownload('generated')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-white">確認下載</button>
@@ -664,9 +628,9 @@ export default function Home() {
       {showContactPrompt && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[800] flex items-center justify-center p-6 text-black" onClick={() => setShowContactPrompt(false)}>
           <div className="bg-white w-full max-w-xs rounded-3xl p-8 shadow-2xl flex flex-col items-center space-y-6 text-black" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-black italic underline decoration-[#E85427]">地圖版輸出</h3>
+            <h3 className="text-xl font-black italic underline decoration-[#E85427] text-black">地圖版輸出</h3>
             <div className="flex justify-between items-center w-full px-4 py-3 bg-zinc-50 rounded-2xl text-black"><span className="text-[10px] font-black text-zinc-500 uppercase">輸出個人聚焦版</span><button onClick={() => setOnlyMeWallpaper(!onlyMeWallpaper)} className={`w-10 h-5 rounded-full transition-all relative ${onlyMeWallpaper ? 'bg-black' : 'bg-zinc-200'}`}><div className={`w-3 h-3 bg-white rounded-full absolute top-1 transition-all ${onlyMeWallpaper ? 'left-6' : 'left-1'}`} /></button></div>
-            <div className="w-full text-center text-black text-black"><span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block text-black">緊急聯絡電話 (選填 / 零後台)</span><input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-4 border border-zinc-100 bg-zinc-50 rounded-2xl font-bold text-center outline-none focus:border-[#E85427] text-black" /></div>
+            <div className="w-full text-center text-black"><span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block text-black">緊急聯絡電話 (選填 / 零後台)</span><input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-4 border border-zinc-100 bg-zinc-50 rounded-2xl font-bold text-center outline-none focus:border-[#E85427] text-black" /></div>
             <button onClick={() => executeDownload('static')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 text-white">確認下載</button>
             <button onClick={() => setShowContactPrompt(false)} className="text-zinc-400 font-bold text-xs text-black">取消</button>
           </div>
