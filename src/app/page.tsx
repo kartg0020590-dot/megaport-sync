@@ -170,6 +170,7 @@ export default function Home() {
   const [detailShow, setDetailShow] = useState<any>(null);
   const [compareMemberEmail, setCompareMemberEmail] = useState<string | null>(null); 
   const [onlyMeWallpaper, setOnlyMeWallpaper] = useState(false);
+const [showGridIcons, setShowGridIcons] = useState(true);
 
   const isOverview = zoom < 0.5;
   const gridData = (festivalData as any)[currentDate] || {};
@@ -460,7 +461,9 @@ export default function Home() {
                     className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative transition-all duration-300 select-none ${isMe && !spotlightActive ? 'shadow-2xl' : ''}`} 
                     style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: finalBg, border: borderStyle, boxSizing: 'border-box', zIndex: (isComparedMember || (isMeSpotlight && isMe)) ? 60 : 30, opacity: opacity, filter: (spotlightActive && !isMe && !isComparedMember) ? 'brightness(0.7) grayscale(20%)' : 'none', touchAction: 'pan-y pan-x' }}>
                     <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 whitespace-pre-line ${textColor}`}>{show.artist}</p>
-                    {(isMe || (spotlightActive && isComparedMember) || !spotlightActive) && (
+                    
+                    {/* 💡 加上 showGridIcons 判斷，來決定是否渲染成員圖標 */}
+                    {showGridIcons && (isMe || (spotlightActive && isComparedMember) || !spotlightActive) && (
                       <div className={`absolute bottom-1 left-2 max-w-[90%] flex flex-row pointer-events-none overflow-hidden ${isOverview ? '-space-x-3' : '-space-x-1.5'}`}>
                         {attendees.map((f, i) => {
                           const m = memberList.find(ml => ml.user_email === f.user_email);
@@ -574,12 +577,28 @@ export default function Home() {
           </div>
 
           {/* 💡 提示語區：已恢復為原本的兩行內容 */}
-          <div className="flex flex-col text-zinc-400 font-bold italic leading-tight text-left pb-1">
-             <span className="text-[8px]">💡 提示：長按表演項目可查看詳細名單，點選成員框框可以查看特定成員團序</span>
-          </div>
+          {/* 💡 提示語區與 Icon 開關 */}
+          {/* 💡 提示語區與 Icon 開關 */}
+          {/* 💡 提示語區與 Icon 開關 */}
+          <div className="w-full flex justify-between items-end pb-1">
+            <div className="flex flex-col text-zinc-400 font-bold italic leading-tight text-left">
+               <span className="text-[8px]">💡 提示：長按表演項目可查看詳細名單，點選成員框框可以查看特定成員團序</span>
+            </div>
+            
+            {/* 🎨 右側迷你開關 */}
+            <div className="flex items-center gap-1.5 bg-zinc-100 px-2 py-0.5 rounded-xl border border-zinc-200">
+              <span className="text-[7px] font-black text-zinc-400 uppercase tracking-tighter">隊友</span>
+              <button 
+                onClick={() => setShowGridIcons(!showGridIcons)}
+                className={`w-6 h-3 rounded-full transition-all relative ${showGridIcons ? 'bg-[#E85427]' : 'bg-zinc-300'}`}
+              >
+                {/* 💡 小圓點尺寸縮小 */}
+                <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showGridIcons ? 'left-3.5' : 'left-0.5'}`} />
+              </button>
+            </div>
+          </div> 
         </div>
       </div>
-
       {showMembers && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex items-center justify-center p-6 text-black" onClick={() => setShowMembers(false)}>
           <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl space-y-6 relative text-black" onClick={e => e.stopPropagation()}>
