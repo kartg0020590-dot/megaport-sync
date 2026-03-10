@@ -226,7 +226,10 @@ const [showGridIcons, setShowGridIcons] = useState(true);
     const savedEmail = localStorage.getItem('megaport_email');
     const savedSquadId = localStorage.getItem('megaport_squad_id');
     const savedDate = localStorage.getItem('megaport_current_date');
-    
+    const savedIconPreference = localStorage.getItem('megaport_show_icons');
+    if (savedIconPreference !== null) {
+      setShowGridIcons(savedIconPreference === 'true');
+    }
     // 💡 新增：自動抓取網址中的邀請碼
     const urlParams = new URLSearchParams(window.location.search);
     const codeFromUrl = urlParams.get('invite');
@@ -403,7 +406,7 @@ const [showGridIcons, setShowGridIcons] = useState(true);
             <span className="text-[8px] font-black uppercase tracking-wider">生成桌布</span>
           </button>
           <div className="flex items-center gap-1 bg-zinc-50 px-2 py-1.5 rounded-full border border-zinc-200 shadow-sm text-black">
-            <span className="text-[7px] font-black text-zinc-400 uppercase tracking-tighter">ICON:</span>
+            <span className="text-[7px] font-black text-zinc-400 uppercase tracking-tighter">COLOR</span>
             <input type="color" value={userColor} onChange={e => handleMemberColorChange(e.target.value)} className="w-3.5 h-3.5 rounded-full bg-transparent border-none cursor-pointer" />
           </div>
           <div className="flex bg-zinc-100 rounded-lg p-0.5 shadow-sm text-black">
@@ -585,14 +588,18 @@ const [showGridIcons, setShowGridIcons] = useState(true);
                <span className="text-[8px]">💡 提示：長按表演項目可查看詳細名單，點選成員框框可以查看特定成員團序</span>
             </div>
             
-            {/* 🎨 右側迷你開關 */}
+            {/* 🎨 右側迷你開關 - 加入儲存紀錄功能 */}
             <div className="flex items-center gap-1.5 bg-zinc-100 px-2 py-0.5 rounded-xl border border-zinc-200">
               <span className="text-[7px] font-black text-zinc-400 uppercase tracking-tighter">隊友</span>
               <button 
-                onClick={() => setShowGridIcons(!showGridIcons)}
+                onClick={() => {
+                  const nextState = !showGridIcons;
+                  setShowGridIcons(nextState);
+                  // 💡 儲存到本地，下次進來就不用再點一次
+                  localStorage.setItem('megaport_show_icons', String(nextState));
+                }}
                 className={`w-6 h-3 rounded-full transition-all relative ${showGridIcons ? 'bg-[#E85427]' : 'bg-zinc-300'}`}
               >
-                {/* 💡 小圓點尺寸縮小 */}
                 <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showGridIcons ? 'left-3.5' : 'left-0.5'}`} />
               </button>
             </div>
