@@ -510,7 +510,7 @@ const [showGridIcons, setShowGridIcons] = useState(true);
 
       {/* 📜 Artist 列表視窗 */}
       {showArtistList && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm" onClick={() => setShowArtistList(false)}>
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm" onClick={() => setShowArtistList(false)}>
           <div className="bg-white w-full max-w-lg h-[85vh] rounded-[40px] p-8 shadow-2xl flex flex-col border border-black/10" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center border-b pb-4 shrink-0 text-black">
               <h3 className="text-xl font-black uppercase tracking-tighter">ARTISTS</h3>
@@ -534,7 +534,7 @@ const [showGridIcons, setShowGridIcons] = useState(true);
                 </select>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar pb-10">
               {flatArtistData.map((show: any) => {
                 const isMe = allSelections.some(s => s.user_email === email && String(s.performance_id) === String(show.id));
                 const hasLink = SPOTIFY_LINKS[show.id]; 
