@@ -394,7 +394,6 @@ const [showGridIcons, setShowGridIcons] = useState(true);
              <button className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all shadow-sm ${!compareMemberEmail ? 'bg-zinc-100 text-black' : ''}`}
                style={compareMemberEmail ? { backgroundColor: comparedMember?.user_color, color: '#FFFFFF' } : {}}>
                 <span className="text-[10px]">{compareMemberEmail ? '🎯' : '👥'}</span>
-                <span className={`text-[8px] font-black uppercase tracking-wider ${compareMemberEmail ? 'text-white' : 'text-black'}`}>{compareMemberEmail ? comparedMember?.user_name : '成員'}</span>
              </button>
           </div>
         </div>
