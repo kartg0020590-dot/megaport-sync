@@ -632,30 +632,7 @@ const [showGridIcons, setShowGridIcons] = useState(true);
         </div>
       )}
 
-      {detailShow && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[400] flex items-center justify-center p-6 text-black" onClick={() => setDetailShow(null)}>
-          <div className="bg-white w-full max-w-xs rounded-[40px] p-10 shadow-2xl space-y-4 flex flex-col items-center animate-in fade-in zoom-in duration-200 text-black" onClick={e => e.stopPropagation()}>
-            <div className="text-center flex flex-col items-center text-black">
-              <div className="flex items-center justify-center gap-3"><h3 className="text-2xl font-black italic underline decoration-[#E85427] tracking-tighter whitespace-pre-line text-black">{detailShow.artist.replace(/\n/g, ' ')}</h3>{SPOTIFY_LINKS[detailShow.id] && <button onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => { e.stopPropagation(); setSpotifyArtist(detailShow); }} className="w-6 h-6 bg-[#C5EBC3] text-black/70 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0"><span className="text-[10px]">🔗</span></button>}</div>
-              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mt-1">{detailShow.start} — {detailShow.end}</p>
-            </div>
-            <div className="w-full bg-zinc-50 rounded-3xl p-6 flex flex-col max-h-[50vh] overflow-hidden text-black">
-              <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest block mb-4 text-zinc-400">已選取隊友 (點選可對照)</span>
-              <div className="space-y-3 overflow-y-auto custom-scrollbar pr-1">
-                {allSelections.filter(s => String(s.performance_id) === String(detailShow.id)).map((attendee, idx) => {
-                  const m = memberList.find(ml => ml.user_email === attendee.user_email);
-                  return (
-                    <div key={idx} onClick={() => { if(attendee.user_email !== email) { setCompareMemberEmail(attendee.user_email === compareMemberEmail ? null : attendee.user_email); setDetailShow(null); } }} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all ${attendee.user_email === compareMemberEmail ? 'bg-[#E85427] text-white shadow-md' : ''}`}>
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-[10px] shadow-sm" style={{ backgroundColor: m?.user_color || '#000' }}>{(m?.user_name || attendee.user_name || '?').charAt(0).toUpperCase()}</div><span className={`font-bold text-sm ${attendee.user_email === compareMemberEmail ? 'text-white' : 'text-black'}`}>{m?.user_name || attendee.user_name}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <button onClick={() => setDetailShow(null)} className="w-full py-4 bg-black text-white rounded-2xl font-black shadow-lg text-white">返回團序</button>
-          </div>
-        </div>
-      )}
+      
 
       {spotifyArtist && <SpotifyModal artist={spotifyArtist} onClose={() => setSpotifyArtist(null)} />}
       <WallpaperLayout date={currentDate} bgColor={wallpaperBg} textColor={wallpaperText} wallpaperRef={wallpaperRef} selectedShows={allSelections.filter(s => s.user_email === email && String(s.performance_id).includes(currentDate.split('-')[2]))} mode={wallpaperMode} contactInfo={contactNumber} maskMode={onlyMeWallpaper} />
@@ -684,6 +661,30 @@ const [showGridIcons, setShowGridIcons] = useState(true);
             <div className="w-full text-center text-black"><span className="text-[10px] font-black text-zinc-400 uppercase mb-2 block text-black">緊急聯絡電話 (選填 / 零後台)</span><input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} placeholder="09XXXXXXXX" className="w-full p-4 border border-zinc-100 bg-zinc-50 rounded-2xl font-bold text-center outline-none focus:border-[#E85427] text-black" /></div>
             <button onClick={() => executeDownload('static')} className="w-full py-4 bg-[#E85427] text-white font-black rounded-2xl shadow-xl active:scale-95 text-white">確認下載</button>
             <button onClick={() => setShowContactPrompt(false)} className="text-zinc-400 font-bold text-xs text-black">取消</button>
+          </div>
+        </div>
+      )}
+    {detailShow && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[700] flex items-center justify-center p-6 text-black" onClick={() => setDetailShow(null)}>
+          <div className="bg-white w-full max-w-xs rounded-[40px] p-10 shadow-2xl space-y-4 flex flex-col items-center animate-in fade-in zoom-in duration-200 text-black" onClick={e => e.stopPropagation()}>
+            <div className="text-center flex flex-col items-center text-black">
+              <div className="flex items-center justify-center gap-3"><h3 className="text-2xl font-black italic underline decoration-[#E85427] tracking-tighter whitespace-pre-line text-black">{detailShow.artist.replace(/\n/g, ' ')}</h3>{SPOTIFY_LINKS[detailShow.id] && <button onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => { e.stopPropagation(); setSpotifyArtist(detailShow); }} className="w-6 h-6 bg-[#C5EBC3] text-black/70 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0"><span className="text-[10px]">🔗</span></button>}</div>
+              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mt-1">{detailShow.start} — {detailShow.end}</p>
+            </div>
+            <div className="w-full bg-zinc-50 rounded-3xl p-6 flex flex-col max-h-[50vh] overflow-hidden text-black">
+              <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest block mb-4 text-zinc-400">已選取隊友 (點選可對照)</span>
+              <div className="space-y-3 overflow-y-auto custom-scrollbar pr-1">
+                {allSelections.filter(s => String(s.performance_id) === String(detailShow.id)).map((attendee, idx) => {
+                  const m = memberList.find(ml => ml.user_email === attendee.user_email);
+                  return (
+                    <div key={idx} onClick={() => { if(attendee.user_email !== email) { setCompareMemberEmail(attendee.user_email === compareMemberEmail ? null : attendee.user_email); setDetailShow(null); } }} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all ${attendee.user_email === compareMemberEmail ? 'bg-[#E85427] text-white shadow-md' : ''}`}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-[10px] shadow-sm" style={{ backgroundColor: m?.user_color || '#000' }}>{(m?.user_name || attendee.user_name || '?').charAt(0).toUpperCase()}</div><span className={`font-bold text-sm ${attendee.user_email === compareMemberEmail ? 'text-white' : 'text-black'}`}>{m?.user_name || attendee.user_name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <button onClick={() => setDetailShow(null)} className="w-full py-4 bg-black text-white rounded-2xl font-black shadow-lg text-white">返回團序</button>
           </div>
         </div>
       )}
