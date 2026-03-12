@@ -518,34 +518,72 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
     }
   };
 
-  const handlePointerDown = (e: React.PointerEvent, show: any) => {
-  activePointers.current.add(e.pointerId);
+ const handlePointerDown = (e: React.PointerEvent, show: any) => {
+    activePointers.current.add(e.pointerId);
 
-  // 💡 如果是第一隻手指點下，重置多指狀態，給予這次操作「點擊」的機會
-  if (activePointers.current.size === 1) {
-    isMultitouch.current = false; 
-  }
+    // 💡 修正 1：只要回到單指，就重新給予點擊機會
+    if (activePointers.current.size === 1) {
+      isMultitouch.current = false;
+    }
 
-  if (activePointers.current.size > 1) {
-    isMultitouch.current = true;
+    if (activePointers.current.size > 1) {
+      isMultitouch.current = true;
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+      return; 
+    }
+
+    pointerStartPos.current = { x: e.clientX, y: e.clientY };
+    hasMovedSignificant.current = false;
+    isLongPress.current = false;
+    
+    longPressTimer.current = setTimeout(() => {
+      if (!hasMovedSignificant.current && !isMultitouch.current) {
+        isLongPress.current = true;
+        setDetailShow(show);
+      }
+    }, 600);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (isMultitouch.current) return;
+
+    const dx = Math.abs(e.clientX - pointerStartPos.current.x);
+    const dy = Math.abs(e.clientY - pointerStartPos.current.y);
+
+    // 💡 修正 2：將判定門檻從 15 提高到 25
+    // 手機點擊時手指肉墊會散開，位移通常會超過 15px，提高門檻可以大幅增加點擊成功率
+    if (dx > 25 || dy > 25) {
+      hasMovedSignificant.current = true;
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent, show: any) => {
+    activePointers.current.delete(e.pointerId);
+    
+    const wasMultitouch = isMultitouch.current;
+
+    // 💡 修正 3：確保手指全部離開後重置狀態
+    if (activePointers.current.size === 0) {
+      isMultitouch.current = false;
+    }
+
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-    return; 
-  }
 
-  pointerStartPos.current = { x: e.clientX, y: e.clientY };
-  hasMovedSignificant.current = false;
-  isLongPress.current = false;
-  
-  longPressTimer.current = setTimeout(() => {
-    if (!hasMovedSignificant.current && !isMultitouch.current) {
-      isLongPress.current = true;
-      setDetailShow(show);
+    // 💡 修正 4：放寬判定，只要當下不是長按，且位移在容許範圍內，就視為點擊
+    if (!isLongPress.current && !hasMovedSignificant.current && !wasMultitouch) {
+      handleToggle(show);
     }
-  }, 600);
-};
+  };
 
   const handlePointerMove = (e: React.PointerEvent) => {
   // 1. 如果已經是多指模式（縮放中），直接結束，不處理後續位移判定
