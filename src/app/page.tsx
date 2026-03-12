@@ -518,7 +518,7 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
     }
   };
 
-  const handlePointerDown = (e, show) => {
+  const handlePointerDown = (e: React.PointerEvent, show: any) => {
   activePointers.current.add(e.pointerId);
 
   // 💡 關鍵：只要偵測到超過一隻手指，就標記為多指模式並取消所有點擊/長按邏輯
@@ -546,16 +546,19 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
   }, 600); // 稍微增加一點長按判定時間(600ms)，避免太靈敏
 };
 
-  const handlePointerMove = (e) => {
-  // 如果已經是多指模式（縮放中），直接無視移動判定
+  const handlePointerMove = (e: React.PointerEvent) => {
+  // 1. 如果已經是多指模式（縮放中），直接結束，不處理後續位移判定
   if (isMultitouch.current) return;
 
+  // 2. 計算位移（只宣告一次）
   const dx = Math.abs(e.clientX - pointerStartPos.current.x);
   const dy = Math.abs(e.clientY - pointerStartPos.current.y);
 
-  // 如果移動超過 15 像素，判定為「滑動課表」而非「點擊」
+  // 3. 判定是否為「顯著移動」
   if (dx > 15 || dy > 15) {
     hasMovedSignificant.current = true;
+    
+    // 如果正在計時長按，一旦移動就取消它
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
@@ -563,9 +566,8 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
   }
 };
 
- const handlePointerUp = (e, show) => {
+ const handlePointerUp = (e: React.PointerEvent, show: any) => {
   activePointers.current.delete(e.pointerId);
-
   // 如果這一次的操作曾經觸發過多指（縮放），在手指全部離開前不執行任何點擊
   if (isMultitouch.current) {
     if (activePointers.current.size === 0) {
