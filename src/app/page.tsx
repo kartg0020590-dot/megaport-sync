@@ -268,18 +268,28 @@ useEffect(() => {
   const dayNum = currentDate.split('-')[2];
 
   const executeDownload = async (mode: string) => {
-    if (!wallpaperRef.current) return;
-    setShowColorPicker(false); setShowContactPrompt(false);
-    setTimeout(async () => {
-      try {
-        const canvas = await html2canvas(wallpaperRef.current!, { scale: 1, useCORS: true, windowWidth: 1242, windowHeight: 2688 });
-        const link = document.createElement('a');
-        link.download = `megaport_${currentDate.split('-')[2]}日桌面_${mode}${onlyMeWallpaper ? '_聚光燈' : ''}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      } catch (err) { alert('生成失敗'); }
-    }, 300);
-  };
+  if (!wallpaperRef.current) return;
+  setShowColorPicker(false); setShowContactPrompt(false);
+  
+  setTimeout(async () => {
+    try {
+      const canvas = await html2canvas(wallpaperRef.current!, { 
+        scale: 1, 
+        useCORS: true, 
+        windowWidth: 1242, 
+        windowHeight: 2688 
+      });
+
+      const link = document.createElement('a');
+      link.download = `megaport_${currentDate.split('-')[2]}日桌面_${mode}.jpg`;
+      
+      // 💡 關鍵修改：從 'image/png' 改為 'image/jpeg'，並設定品質為 0.8 (80%)
+      link.href = canvas.toDataURL('image/jpeg', 0.8); 
+      
+      link.click();
+    } catch (err) { alert('生成失敗'); }
+  }, 300);
+};
 
   const comparedMember = useMemo(() => memberList.find(m => m.user_email === compareMemberEmail), [memberList, compareMemberEmail]);
   const sortedMemberList = useMemo(() => {
