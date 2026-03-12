@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import festivalData from '../../data.json'
+import quotesData from '../../quotes.json'
 import { SPOTIFY_LINKS } from '../spotifyData'
 import { supabase } from '@/lib/supabaseClient'
 import html2canvas from 'html2canvas'
@@ -142,8 +143,11 @@ export default function Home() {
   const hasMovedSignificant = useRef(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const isLongPress = useRef(false);
+const activePointers = useRef(new Set()); // 紀錄目前在螢幕上的手指 ID
+const isMultitouch = useRef(false);       // 標記這一次操作是否曾經出現過多指
 
-  const [scrollPos, setScrollPos] = useState({ top: 0, left: 0 });
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState('');
   const [userName, setUserName] = useState('');
@@ -171,8 +175,95 @@ export default function Home() {
   const [compareMemberEmail, setCompareMemberEmail] = useState<string | null>(null); 
   const [onlyMeWallpaper, setOnlyMeWallpaper] = useState(false);
 const [showGridIcons, setShowGridIcons] = useState(true);
+// 💡 火力預報狀態
+  const [showHeatMap, setShowHeatMap] = useState(true);
+  const [heatLevels, setHeatLevels] = useState<Record<string, any>>({});
+const [now, setNow] = useState(new Date());
+  const [showTimeMask, setShowTimeMask] = useState(true); // 💡 新增：預設開啟遮罩
+  // 💡 自定義你的隨機語錄
+// 💡 更新為更具大港風格的隨機語錄
+
+
+// 在 Home 組件內新增這個 state (如果還沒加)
+const [randomQuote, setRandomQuote] = useState("");
+
+useEffect(() => {
+  // 每次組件掛載（點進去）時隨機挑選一句
+  if (quotesData && quotesData.length > 0) {
+    const randomIndex = Math.floor(Math.random() * quotesData.length);
+    setRandomQuote(quotesData[randomIndex]);
+  }
+}, []);
+
+  // 💡 定時每分鐘更新一次時間
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const isOverview = zoom < 0.5;
+  // 💡 步驟 2 修正版：計算過去時間遮罩高度
+  const pastTimeMaskHeight = useMemo(() => {
+    // 強制轉為台北時間進行計算
+    const taipeiTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+    const h = taipeiTime.getHours();
+    const m = taipeiTime.getMinutes();
+    const totalMinutes = h * 60 + m;
+    const startMinutes = 12 * 60 + 30; // 課表從 12:30 開始
+    
+    // 如果現在時間還沒到 12:30，遮罩高度為 0 (不遮擋)
+    if (totalMinutes < startMinutes) {
+      return 0;
+    }
+    
+    // 如果現在時間已經超過 22:30，遮罩高度為整個 Grid 的高度 (10分鐘*60格 = 2700px + 舞台標籤80px)
+    if (totalMinutes > 22 * 60 + 30) {
+      return 2780; 
+    }
+
+    // 每一格 10 分鐘是 45px，所以 1 分鐘是 4.5px
+    // + 80 是第一列舞台標籤的高度
+    return (totalMinutes - startMinutes) * 4.5 + 80;
+  }, [now]);
+
+  // 💡 智慧遮罩配置：判定 全遮 / 動態遮 / 不遮
+  const maskConfig = useMemo(() => {
+    const taipeiTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+    const todayStr = taipeiTime.toLocaleDateString("en-CA", {timeZone: "Asia/Taipei"}); 
+    
+    // 你的日期對照表 (測試用)
+    const dateMapping: Record<string, string> = {
+      '2026-03-21': '2026-03-21', // 3/21 課表對應實際時間 3/12
+      '2026-03-22': '2026-03-22', // 3/22 課表對應實際時間 3/13 (依此類推)
+    };
+
+    const targetRealDate = dateMapping[currentDate];
+
+    // 1. 如果今天已經超過了課表對應的日期 -> 全遮
+    if (todayStr > targetRealDate) {
+      return { height: 2780, visible: true, isPastDay: true };
+    }
+
+    // 2. 如果今天正好是課表對應的日期 -> 動態遮罩
+    if (todayStr === targetRealDate) {
+      const h = taipeiTime.getHours();
+      const m = taipeiTime.getMinutes();
+      const totalMinutes = h * 60 + m;
+      const startMinutes = 12 * 60 + 30;
+      
+      let height = 0;
+      if (totalMinutes < startMinutes) height = 0;
+      else if (totalMinutes > 22 * 60 + 30) height = 2780;
+      else height = (totalMinutes - startMinutes) * 4.5 + 80;
+
+      return { height, visible: true, isPastDay: false };
+    }
+
+    // 3. 如果今天還沒到課表對應的日期 -> 不顯示遮罩
+    return { height: 0, visible: false, isPastDay: false };
+  }, [now, currentDate]);
+  // ---------------------------------------------------------
+
   const gridData = (festivalData as any)[currentDate] || {};
   const dayNum = currentDate.split('-')[2];
 
@@ -222,27 +313,50 @@ const [showGridIcons, setShowGridIcons] = useState(true);
   }, [allSelections, email, artistSort, selectedStage]);
 
   useEffect(() => {
-    setMounted(true);
-    const savedEmail = localStorage.getItem('megaport_email');
-    const savedSquadId = localStorage.getItem('megaport_squad_id');
-    const savedDate = localStorage.getItem('megaport_current_date');
-    const savedIconPreference = localStorage.getItem('megaport_show_icons');
-    if (savedIconPreference !== null) {
-      setShowGridIcons(savedIconPreference === 'true');
-    }
-    // 💡 新增：自動抓取網址中的邀請碼
-    const urlParams = new URLSearchParams(window.location.search);
-    const codeFromUrl = urlParams.get('invite');
-    if (codeFromUrl) {
-      setInviteCode(codeFromUrl);
-    }
+  const scrollEl = scrollContainerRef.current;
+  if (!scrollEl) return;
 
-    if (savedDate) setCurrentDate(savedDate);
-    if (savedEmail) { 
+  const handleScroll = () => {
+    // 💡 直接計算位移量並寫入 CSS 變數
+    const x = scrollEl.scrollLeft / zoom;
+    const y = scrollEl.scrollTop / zoom;
+    scrollEl.style.setProperty('--scroll-x', `${x}px`);
+    scrollEl.style.setProperty('--scroll-y', `${y}px`);
+  };
+
+  // 🛠️ 關鍵修復：掛載後立即執行一次，確保初始位置 (0, 0) 被寫入
+  handleScroll(); 
+
+  scrollEl.addEventListener('scroll', handleScroll, { passive: true });
+  return () => scrollEl.removeEventListener('scroll', handleScroll);
+}, [zoom, currentSquad, currentDate]); // 💡 建議加入 currentDate，確保切換日期後也能重置
+  useEffect(() => {
+  setMounted(true);
+  const savedEmail = localStorage.getItem('megaport_email');
+  const savedSquadId = localStorage.getItem('megaport_squad_id');
+  const savedDate = localStorage.getItem('megaport_current_date');
+  const savedIconPreference = localStorage.getItem('megaport_show_icons');
+const savedHeatPreference = localStorage.getItem('megaport_show_heat');
+    if (savedHeatPreference !== null) setShowHeatMap(savedHeatPreference === 'true');
+
+  // 💡 新增：讀取遮罩偏好 (預設為 true)
+  const savedMaskPreference = localStorage.getItem('megaport_show_mask');
+  if (savedMaskPreference !== null) {
+    setShowTimeMask(savedMaskPreference === 'true');
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const codeFromUrl = urlParams.get('invite');
+  if (codeFromUrl) setInviteCode(codeFromUrl);
+
+  if (savedDate) setCurrentDate(savedDate);
+  if (savedIconPreference !== null) setShowGridIcons(savedIconPreference === 'true');
+  if (savedEmail) { 
       setEmail(savedEmail); 
       fetchMySquads(savedEmail, savedSquadId); 
+      fetchGlobalHeat(); // 💡 登入後立刻抓取全球熱度
     }
-  }, []);
+}, []);
 
   useEffect(() => { if (currentSquad) { fetchSelections(); fetchSquadMembers(); } }, [currentSquad, currentDate]);
 
@@ -279,14 +393,155 @@ const [showGridIcons, setShowGridIcons] = useState(true);
     fetchSelections();
   };
 
-  const handlePointerDown = (e: any, show: any) => {
-    pointerStartPos.current = { x: e.clientX, y: e.clientY };
-    hasMovedSignificant.current = false;
-    isLongPress.current = false;
-    longPressTimer.current = setTimeout(() => { 
-      if (!hasMovedSignificant.current) { isLongPress.current = true; setDetailShow(show); }
-    }, 500); 
+  const fetchGlobalHeat = async () => {
+    try {
+      console.log("🚀 啟動熱度運算 (排名制 + 總註冊人數 3% 門檻)...");
+      
+      // 1. 獲取所有資料
+      const { data: allGlobal } = await supabase.from('user_selections').select('user_email, performance_id');
+      if (!allGlobal || allGlobal.length === 0) return;
+
+      // 2. 計算總註冊人數 (不重複的 Email 總數)
+      const allUniqueUsers = Array.from(new Set(allGlobal.map(s => s.user_email)));
+      const totalUserCount = allUniqueUsers.length;
+      const absoluteThreshold = Math.ceil(totalUserCount * 0.03); // 💡 計算 3% 人數門檻 (無條件進位)
+
+      console.log(`📊 系統統計: 總用戶數 ${totalUserCount} 人, 噴火門檻需滿 ${absoluteThreshold} 人`);
+
+      // 3. 預先統計每一團的「原始勾選人數」
+      const rawCounts: Record<string, number> = {};
+      allGlobal.forEach(s => {
+        rawCounts[s.performance_id] = (rawCounts[s.performance_id] || 0) + 1;
+      });
+
+      const perfInfo: Record<string, any> = {};
+      Object.keys(festivalData).forEach(date => {
+        Object.keys((festivalData as any)[date]).forEach(stage => {
+          (festivalData as any)[date][stage].forEach((show: any) => {
+            const startMin = Number(show.start.split(':')[0]) * 60 + Number(show.start.split(':')[1]);
+            const endMin = Number(show.end.split(':')[0]) * 60 + Number(show.end.split(':')[1]);
+            const slots = [];
+            for (let m = startMin; m < endMin; m += 10) slots.push(`${date}_${m}`);
+            perfInfo[show.id] = { ...show, stage, date, slots };
+          });
+        });
+      });
+
+      // --- 第一步：計算同時段分攤 (Artist X) ---
+      const userSlotCounts: Record<string, Record<string, number>> = {};
+      allGlobal.forEach(s => {
+        const info = perfInfo[s.performance_id];
+        if (!info) return;
+        if (!userSlotCounts[s.user_email]) userSlotCounts[s.user_email] = {};
+        info.slots.forEach((slot: string) => {
+          userSlotCounts[s.user_email][slot] = (userSlotCounts[s.user_email][slot] || 0) + 1;
+        });
+      });
+
+      const perfSlotWeights: Record<string, Record<string, number>> = {}; 
+      const totalSlotWeight: Record<string, number> = {};
+      allGlobal.forEach(s => {
+        const info = perfInfo[s.performance_id];
+        if (!info) return;
+        if (!perfSlotWeights[s.performance_id]) perfSlotWeights[s.performance_id] = {};
+        info.slots.forEach((slot: string) => {
+          const weight = 1 / (userSlotCounts[s.user_email][slot] || 1);
+          perfSlotWeights[s.performance_id][slot] = (perfSlotWeights[s.performance_id][slot] || 0) + weight;
+          totalSlotWeight[slot] = (totalSlotWeight[slot] || 0) + weight;
+        });
+      });
+
+      const artistX: Record<string, number> = {};
+      Object.keys(perfInfo).forEach(id => {
+        const info = perfInfo[id];
+        const proportions = info.slots.map((slot: string) => (perfSlotWeights[id]?.[slot] / totalSlotWeight[slot]) || 0);
+        artistX[id] = proportions.reduce((a: number, b: number) => a + b, 0) / (proportions.length || 1);
+      });
+
+      const stageGroups: Record<string, number[]> = {};
+      Object.keys(perfInfo).forEach(id => {
+        const { stage } = perfInfo[id];
+        const X = artistX[id];
+        if (!stageGroups[stage]) stageGroups[stage] = [];
+        stageGroups[stage].push(X);
+      });
+
+      // --- 第二步：排名與「絕對人數」判斷 ---
+      const newHeatLevels: Record<string, any> = {};
+
+      Object.keys(stageGroups).forEach(stage => {
+        const groupX = stageGroups[stage];
+        const validGroup = groupX.filter(x => x > 0);
+        if (validGroup.length === 0) return;
+
+        const sortedX = [...validGroup].sort((a, b) => b - a);
+        const threshold10 = sortedX[Math.floor(sortedX.length * 0.1)] || 0;
+        const threshold20 = sortedX[Math.floor(sortedX.length * 0.2)] || 0;
+        const threshold30 = sortedX[Math.floor(sortedX.length * 0.3)] || 0;
+
+        Object.keys(perfInfo).forEach(id => {
+          if (perfInfo[id].stage === stage) {
+            const X = artistX[id];
+            const count = rawCounts[id] || 0;
+            let level = 0;
+
+            // 💡 相對排名判斷
+            if (X >= threshold10) level = 3;
+            else if (X >= threshold20) level = 2;
+            else if (X >= threshold30) level = 1;
+
+            // 💡 暴力門禁：如果勾選人數 < 總註冊人數的 3%，強制不給火
+            if (count < absoluteThreshold) {
+              level = 0;
+            }
+
+            const mean = groupX.reduce((a, b) => a + b, 0) / groupX.length;
+            const variance = groupX.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / groupX.length;
+            const sd = Math.sqrt(variance);
+
+            newHeatLevels[id] = { 
+              level, 
+              votes: X, 
+              count: count,
+              threshold: absoluteThreshold, // 將門檻存入 debug 備查
+              baseline: mean, 
+              sd: sd,
+              ratio: X > 0 ? `Top ${((sortedX.indexOf(X) / sortedX.length) * 100).toFixed(0)}%` : 'N/A'
+            };
+          }
+        });
+      });
+
+      setHeatLevels(newHeatLevels);
+    } catch (e) {
+      console.error("❌ 運算失敗:", e);
+    }
   };
+
+  const handlePointerDown = (e: any, show: any) => {
+  activePointers.current.add(e.pointerId); // 紀錄手指
+
+  // 💡 如果同時出現兩隻(含)以上的手指
+  if (activePointers.current.size > 1) {
+    isMultitouch.current = true;
+    if (longPressTimer.current) { 
+      clearTimeout(longPressTimer.current); 
+      longPressTimer.current = null; 
+    }
+    return; // 多指狀態下，不執行後面的單指點擊邏輯
+  }
+
+  pointerStartPos.current = { x: e.clientX, y: e.clientY };
+  hasMovedSignificant.current = false;
+  isLongPress.current = false;
+  
+  longPressTimer.current = setTimeout(() => { 
+    if (!hasMovedSignificant.current && !isMultitouch.current) { 
+      isLongPress.current = true; 
+      setDetailShow(show); 
+    }
+  }, 500); 
+};
 
   const handlePointerMove = (e: any) => {
     const dx = Math.abs(e.clientX - pointerStartPos.current.x);
@@ -298,9 +553,19 @@ const [showGridIcons, setShowGridIcons] = useState(true);
   };
 
   const handlePointerUp = (e: any, show: any) => {
-    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
-    if (!hasMovedSignificant.current && !isLongPress.current) { handleToggle(show); }
-  };
+  activePointers.current.delete(e.pointerId); // 移出手指
+
+  // 💡 如果這場操作中曾經出現過兩隻手指，或是現在還有其他手指在螢幕上
+  if (isMultitouch.current) {
+    if (activePointers.current.size === 0) {
+      isMultitouch.current = false; // 所有手指都離開了，重置狀態
+    }
+    return; // 這是縮放動作，不觸發點擊
+  }
+
+  if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  if (!hasMovedSignificant.current && !isLongPress.current) { handleToggle(show); }
+};
 
   const handlePointerCancel = () => {
     hasMovedSignificant.current = true;
@@ -417,31 +682,94 @@ const [showGridIcons, setShowGridIcons] = useState(true);
       </div>
 
       {/* 🗺️ 二、 大港課表主地圖 */}
-      <div className="flex-1 overflow-auto relative bg-white no-scrollbar" onScroll={(e) => setScrollPos({ top: e.currentTarget.scrollTop, left: e.currentTarget.scrollLeft })}>
+     <div ref={scrollContainerRef} className="flex-1 overflow-auto relative bg-white no-scrollbar">
         <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%`, position: 'relative' }}>
           <div className="inline-grid p-10 px-20 rounded-3xl" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)', touchAction: 'pan-y pan-x', position: 'relative' }}>
-            <div className="bg-black text-white border-b border-r border-zinc-800 flex items-center justify-center font-black text-[42px] z-[500]" style={{ gridColumn: '1', gridRow: '1', paddingBottom: '20px', transform: `translate(${scrollPos.left / zoom}px, ${scrollPos.top / zoom}px)`, position: 'relative' }}>{dayNum}</div>
+            
+            {/* 🌑 1. 智慧時間遮罩 (層級 200) */}
+            {showTimeMask && maskConfig.visible && maskConfig.height > 0 && (
+              <div style={{
+                gridColumn: '1 / 13', gridRow: '1', position: 'absolute', top: 0, left: 0, right: 0, height: `${maskConfig.height}px`,
+                backgroundColor: 'rgba(0, 0, 0, 0.65)', mixBlendMode: 'multiply',
+                borderBottom: maskConfig.isPastDay ? 'none' : '4px solid #FFFFFF',
+                boxShadow: maskConfig.isPastDay ? 'none' : '0 4px 20px rgba(0,0,0,0.3)',
+                zIndex: 200, pointerEvents: 'none', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', paddingLeft: '120px', paddingBottom: '5px'
+              }}>
+                {!maskConfig.isPastDay && (
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: '60px', color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '-0.02em', whiteSpace: 'nowrap', textShadow: '2px 2px 0px rgba(0, 0, 0, 0.3)' }}>
+                    {randomQuote}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* 2. 左上角日期方塊 (十字路口，層級 500) */}
+            <div className="bg-black text-white border-b border-r border-zinc-800 flex items-center justify-center font-black text-[42px] z-[500]" 
+                 style={{ 
+                   gridColumn: '1', gridRow: '1', paddingBottom: '20px', position: 'relative',
+                   transform: 'translate3d(var(--scroll-x, 0px), var(--scroll-y, 0px), 0)', // 同時鎖定 X 與 Y
+                   willChange: 'transform'
+                 }}>
+              {dayNum}
+            </div>
+
+            {/* 3. 上方舞台標籤列 (層級 400) */}
             {Object.keys(STAGE_THEME).map((s, idx) => (
-              <div key={s} className="flex items-center justify-center font-black text-[42px] z-[400] border border-black" style={{ gridColumnStart: idx + 2, gridRow: '1', backgroundColor: STAGE_THEME[s].bg, color: STAGE_THEME[s].text, paddingBottom: '20px', borderBottom: '1px solid #000000', transform: `translateY(${scrollPos.top / zoom}px)`, position: 'relative' }}>{s}</div>
+              <div key={s} className="flex items-center justify-center font-black text-[42px] z-[400] border border-black" 
+                   style={{ 
+                     gridColumnStart: idx + 2, gridRow: '1', backgroundColor: STAGE_THEME[s].bg, color: STAGE_THEME[s].text, paddingBottom: '20px', borderBottom: '1px solid #000000',
+                     position: 'relative',
+                     transform: 'translate3d(0, var(--scroll-y, 0px), 0)', // 只鎖定 Y 軸
+                     willChange: 'transform'
+                   }}>
+                {s}
+              </div>
             ))}
-            <div className="bg-black text-white border-b border-l border-zinc-800 flex items-center justify-center font-black text-[42px] z-[400]" style={{ gridColumn: '12', gridRow: '1', paddingBottom: '20px', transform: `translateY(${scrollPos.top / zoom}px)`, position: 'relative' }}>{dayNum}</div>
-            {Object.keys(STAGE_THEME).map((_, idx) => (<div key={`bg-col-${idx}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60' }} className={`pointer-events-none z-0 border-r border-zinc-300 ${idx % 2 === 0 ? 'bg-zinc-200' : 'bg-white'}`}></div>))}
+
+            {/* 4. 右上角日期方塊 (層級 400) */}
+            <div className="bg-black text-white border-b border-l border-zinc-800 flex items-center justify-center font-black text-[42px] z-[400]" 
+                 style={{ 
+                   gridColumn: '12', gridRow: '1', paddingBottom: '20px', position: 'relative',
+                   transform: 'translate3d(0, var(--scroll-y, 0px), 0)', // 只鎖定 Y 軸
+                   willChange: 'transform'
+                 }}>
+              {dayNum}
+            </div>
+
+            {/* 5. 垂直背景底色列 */}
+            {Object.keys(STAGE_THEME).map((_, idx) => (
+              <div key={`bg-col-${idx}`} style={{ gridColumnStart: idx + 2, gridRow: '2 / 60' }} className={`pointer-events-none z-0 border-r border-zinc-300 ${idx % 2 === 0 ? 'bg-zinc-200' : 'bg-white'}`}></div>
+            ))}
+
+            {/* 6. 對照成員時的陰影層 */}
             {compareMemberEmail && <div className="pointer-events-none transition-opacity duration-500" style={{ gridRow: '2 / 60', gridColumn: '2 / 12', backgroundColor: 'rgba(0, 0, 0, 0.3)', zIndex: 45 }} />}
+
+            {/* 7. 時間軸與橫線 (層級 300) */}
             {Array.from({ length: 57 }).map((_, i) => {
               const minutes = (12 * 60 + 30 + i * 10);
               const timeStr = `${Math.floor(minutes / 60)}:${minutes % 60 === 0 ? '00' : minutes % 60}`;
               return (
                 <div key={`grid-row-${i}`} className="contents text-black">
-                  <div className="flex items-center justify-center z-[300]" style={{ gridRowStart: i + 2, gridColumn: '1', transform: `translateX(${scrollPos.left / zoom}px) translateY(-50%)`, position: 'relative', height: '0px' }}>
+                  {/* 左側固定時間 */}
+                  <div className="flex items-center justify-center z-[300]" 
+                       style={{ 
+                         gridRowStart: i + 2, gridColumn: '1', position: 'relative', height: '0px',
+                         transform: 'translate3d(var(--scroll-x, 0px), -50%, 0)', // 只鎖定 X 軸位移
+                         willChange: 'transform'
+                       }}>
                     <span className="bg-[#FFF9E1] px-4 py-1 border border-zinc-400 font-mono font-bold text-[24px] text-zinc-500 rounded-sm">{timeStr}</span>
                   </div>
+                  {/* 右側固定時間 (不跟隨 X 軸動) */}
                   <div className="flex items-center justify-center z-[300]" style={{ gridRowStart: i + 2, gridColumn: '12', transform: `translateY(-50%)`, position: 'relative', height: '0px' }}>
                     <span className="bg-[#FFF9E1] px-4 py-1 border border-zinc-400 font-mono font-bold text-[24px] text-zinc-500 rounded-sm">{timeStr}</span>
                   </div>
+                  {/* 背景橫線 */}
                   {i < 56 && <div className={`pointer-events-none z-10 ${minutes % 60 === 50 ? 'border-b-[4px] border-zinc-500' : 'border-b border-zinc-300'}`} style={{ gridRowStart: i + 2, gridColumn: '2 / 12' }}></div>}
                 </div>
               )
             })}
+
+            {/* --- 表演格子開始 --- */}
             {Object.keys(STAGE_THEME).map((stage, colIndex) => {
               const shows = gridData[stage] || [];
               return shows.map((show: any) => {
@@ -462,6 +790,19 @@ const [showGridIcons, setShowGridIcons] = useState(true);
                   <div key={show.id} onPointerDown={(e) => handlePointerDown(e, show)} onPointerMove={handlePointerMove} onPointerUp={(e) => handlePointerUp(e, show)} onPointerCancel={handlePointerCancel}
                     className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative transition-all duration-300 select-none ${isMe && !spotlightActive ? 'shadow-2xl' : ''}`} 
                     style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: finalBg, border: borderStyle, boxSizing: 'border-box', zIndex: (isComparedMember || (isMeSpotlight && isMe)) ? 60 : 30, opacity: opacity, filter: (spotlightActive && !isMe && !isComparedMember) ? 'brightness(0.7) grayscale(20%)' : 'none', touchAction: 'pan-y pan-x' }}>
+                   
+                   {/* 🛠️ 最終 Debug 資訊層：包含人數、佔比與排名 */}
+
+
+                    {/* 🔥 火力預報圖標：放在右上角 */}
+                    {showHeatMap && heatLevels[show.id]?.level > 0 && (
+  <div className="absolute -top-6 -right-0 z-[100] pointer-events-none select-none drop-shadow-[0_4px_8px_rgba(255,100,0,0.4)]">
+    <span className="text-[32px]">
+      {"🔥".repeat(heatLevels[show.id].level)}
+    </span>
+  </div>
+)}
+
                     <p className={`font-black tracking-tighter text-[36px] leading-[1.3] p-2 whitespace-pre-line ${textColor}`}>{show.artist}</p>
                     
                     {/* 💡 加上 showGridIcons 判斷，來決定是否渲染成員圖標 */}
@@ -483,7 +824,7 @@ const [showGridIcons, setShowGridIcons] = useState(true);
 
       {/* 💡 三、 獨立浮動組件 (Modal 與 Zoom) */}
       {/* 💡 修正：Zoom 切換邏輯，確保其中一檔精準回到預設的 0.28 */}
-      <div className="fixed bottom-28 right-6 z-[600]">
+      <div className="fixed bottom-26 right-4 z-[600]">
         <button 
           onClick={() => {
             // 如果現在是大於 0.3 (近看模式)，就縮回預設的 0.28 (全覽)
@@ -563,48 +904,85 @@ const [showGridIcons, setShowGridIcons] = useState(true);
         </div>
       )}
 
-      {/* 💡 底部懸浮主控台 - 空間優化橫移版 */}
-      <div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-zinc-200 z-[500] px-4 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] text-black">
-        <div className="w-full flex flex-col items-start mx-auto" style={{ maxWidth: 'min(100vw, 2200px)' }}>
-          
-          {/* 隊友按鈕列 */}
-          <div className="w-full flex flex-nowrap overflow-x-auto no-scrollbar justify-start items-center gap-2 py-2">
-            {sortedMemberList.map((m, i) => (
-              <button key={i} onClick={() => setCompareMemberEmail(compareMemberEmail === m.user_email ? null : m.user_email)}
-                className={`flex items-center justify-center px-3 py-1.5 rounded-full border-2 transition-all shrink-0 active:scale-95 text-white ${compareMemberEmail === m.user_email ? 'ring-2 ring-black ring-offset-1 scale-105' : 'border-black/5'}`}
-                style={{ backgroundColor: m.user_color, color: '#FFFFFF', borderColor: '#000000' }}>
-                <span className="text-[8px] font-black uppercase tracking-tight whitespace-nowrap">{m.user_name} {m.user_email === email && "(我)"}</span>
-              </button>
-            ))}
-          </div>
+    {/* 💡 三、底部懸浮主控台 */}
+<div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-zinc-200 z-[500] px-4 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] text-black">
+  <div className="w-full flex flex-col items-start mx-auto" style={{ maxWidth: 'min(100vw, 2200px)' }}>
+    
+    {/* 隊友按鈕列 */}
+    <div className="w-full flex flex-nowrap overflow-x-auto no-scrollbar justify-start items-center gap-2 py-2">
+      {sortedMemberList.map((m, i) => (
+        <button key={i} onClick={() => setCompareMemberEmail(compareMemberEmail === m.user_email ? null : m.user_email)}
+          className={`flex items-center justify-center px-3 py-1.5 rounded-full border-2 transition-all shrink-0 active:scale-95 text-white ${compareMemberEmail === m.user_email ? 'ring-2 ring-black ring-offset-1 scale-105' : 'border-black/5'}`}
+          style={{ backgroundColor: m.user_color, color: '#FFFFFF', borderColor: '#000000' }}>
+          <span className="text-[8px] font-black uppercase tracking-tight whitespace-nowrap">{m.user_name} {m.user_email === email && "(我)"}</span>
+        </button>
+      ))}
+    </div>
 
-          {/* 💡 提示語區：已恢復為原本的兩行內容 */}
-          {/* 💡 提示語區與 Icon 開關 */}
-          {/* 💡 提示語區與 Icon 開關 */}
-          {/* 💡 提示語區與 Icon 開關 */}
-          <div className="w-full flex justify-between items-end pb-1">
-            <div className="flex flex-col text-zinc-400 font-bold italic leading-tight text-left">
-               <span className="text-[8px]">💡 提示：長按表演項目可查看詳細名單，點選成員框框可以查看特定成員團序</span>
-            </div>
-            
-            {/* 🎨 右側迷你開關 - 加入儲存紀錄功能 */}
-            <div className="flex items-center gap-1.5 bg-zinc-100 px-2 py-0.5 rounded-xl border border-zinc-200">
-              <span className="text-[7px] font-black text-zinc-400 uppercase tracking-tighter">隊友</span>
-              <button 
-                onClick={() => {
-                  const nextState = !showGridIcons;
-                  setShowGridIcons(nextState);
-                  // 💡 儲存到本地，下次進來就不用再點一次
-                  localStorage.setItem('megaport_show_icons', String(nextState));
-                }}
-                className={`w-6 h-3 rounded-full transition-all relative ${showGridIcons ? 'bg-[#E85427]' : 'bg-zinc-300'}`}
-              >
-                <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showGridIcons ? 'left-3.5' : 'left-0.5'}`} />
-              </button>
-            </div>
-          </div> 
-        </div>
-      </div>
+    {/* 💡 提示語區與雙開關並排 */}
+<div className="w-full flex justify-between items-end pb-1 px-1">
+  
+  {/* 左側提示文字 */}
+  <div className="flex flex-col text-zinc-400 font-bold italic leading-tight text-left">
+    <span className="text-[8px]">💡 人氣功能僅供參考，遮罩功能3/21啟用</span>
+  </div>
+  
+  {/* 右側：統一的開關膠囊容器 */}
+  <div className="flex flex-row items-center gap-4 bg-zinc-100/80 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-zinc-200 shadow-sm">
+    {/* 🔥 熱度開關 */}
+    <div className="flex items-center gap-1.5">
+      <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter whitespace-nowrap">人氣</span>
+      <button 
+        onClick={() => {
+          const nextHeatState = !showHeatMap;
+          setShowHeatMap(nextHeatState);
+          localStorage.setItem('megaport_show_heat', String(nextHeatState));
+        }}
+        className={`w-6 h-3.5 rounded-full transition-all relative shrink-0 ${showHeatMap ? 'bg-[#FF4500]' : 'bg-zinc-300'}`}
+      >
+        <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showHeatMap ? 'left-3.5' : 'left-0.5'}`} />
+      </button>
+    </div>
+
+    <div className="w-[1px] h-3 bg-zinc-300"></div>
+    {/* 🌑 遮罩開關 */}
+<div className="flex items-center gap-1.5">
+  <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter whitespace-nowrap">遮罩</span>
+  <button 
+    onClick={() => {
+      const nextMaskState = !showTimeMask;
+      setShowTimeMask(nextMaskState);
+      // 💡 同步儲存到本地紀錄
+      localStorage.setItem('megaport_show_mask', String(nextMaskState));
+    }}
+    className={`w-6 h-3.5 rounded-full transition-all relative shrink-0 ${showTimeMask ? 'bg-black' : 'bg-zinc-300'}`}
+  >
+    <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showTimeMask ? 'left-3.5' : 'left-0.5'}`} />
+  </button>
+</div>
+
+    {/* 分隔線 (可選，讓視覺更精緻) */}
+    <div className="w-[1px] h-3 bg-zinc-300"></div>
+
+    {/* 🎨 隊友開關 */}
+    <div className="flex items-center gap-1.5">
+      <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter whitespace-nowrap">隊友</span>
+      <button 
+        onClick={() => {
+          const nextState = !showGridIcons;
+          setShowGridIcons(nextState);
+          localStorage.setItem('megaport_show_icons', String(nextState));
+        }}
+        className={`w-6 h-3.5 rounded-full transition-all relative shrink-0 ${showGridIcons ? 'bg-[#E85427]' : 'bg-zinc-300'}`}
+      >
+        <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showGridIcons ? 'left-3.5' : 'left-0.5'}`} />
+      </button>
+    </div>
+
+  </div> 
+</div>
+  </div>
+</div>
       {showMembers && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex items-center justify-center p-6 text-black" onClick={() => setShowMembers(false)}>
           <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl space-y-6 relative text-black" onClick={e => e.stopPropagation()}>
@@ -687,6 +1065,12 @@ const [showGridIcons, setShowGridIcons] = useState(true);
           </div>
         </div>
       )}
+      {/* 🎨 加入作者簽名水印 (固定在左下角，Footer 上方) */}
+      <div className="fixed bottom-[90px] right-4 z-[550] pointer-events-none select-none">
+        <span className="text-[4px] font-black text-zinc-400 opacity-40 uppercase tracking-widest font-mono">
+          made by @yuanchou1107
+        </span>
+      </div>
     </main>
   );
 }
