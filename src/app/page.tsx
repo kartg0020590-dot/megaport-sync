@@ -734,7 +734,7 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
           width: `${100 / zoom}%`, 
           // 🛠️ 修改高度：將原本的 ${100 / zoom}% 改為固定高度
           // 表格約 2645px，1.5 倍大約是 4000px
-          height: '1050px', 
+          height: '1850px', 
           position: 'relative' 
         }}>
           {/* 內部直接接 inline-grid */}
