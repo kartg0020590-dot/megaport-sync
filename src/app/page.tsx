@@ -518,55 +518,76 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
     }
   };
 
-  const handlePointerDown = (e: any, show: any) => {
-  activePointers.current.add(e.pointerId); // 紀錄手指
+  const handlePointerDown = (e: React.PointerEvent, show: any) => {
+  activePointers.current.add(e.pointerId);
 
-  // 💡 如果同時出現兩隻(含)以上的手指
+  // 💡 如果是第一隻手指點下，重置多指狀態，給予這次操作「點擊」的機會
+  if (activePointers.current.size === 1) {
+    isMultitouch.current = false; 
+  }
+
   if (activePointers.current.size > 1) {
     isMultitouch.current = true;
-    if (longPressTimer.current) { 
-      clearTimeout(longPressTimer.current); 
-      longPressTimer.current = null; 
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
     }
-    return; // 多指狀態下，不執行後面的單指點擊邏輯
+    return; 
   }
 
   pointerStartPos.current = { x: e.clientX, y: e.clientY };
   hasMovedSignificant.current = false;
   isLongPress.current = false;
   
-  longPressTimer.current = setTimeout(() => { 
-    if (!hasMovedSignificant.current && !isMultitouch.current) { 
-      isLongPress.current = true; 
-      setDetailShow(show); 
+  longPressTimer.current = setTimeout(() => {
+    if (!hasMovedSignificant.current && !isMultitouch.current) {
+      isLongPress.current = true;
+      setDetailShow(show);
     }
-  }, 500); 
+  }, 600);
 };
 
-  const handlePointerMove = (e: any) => {
-    const dx = Math.abs(e.clientX - pointerStartPos.current.x);
-    const dy = Math.abs(e.clientY - pointerStartPos.current.y);
-    if (dx > 15 || dy > 15) {
-      hasMovedSignificant.current = true;
-      if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
-    }
-  };
+  const handlePointerMove = (e: React.PointerEvent) => {
+  // 1. 如果已經是多指模式（縮放中），直接結束，不處理後續位移判定
+  if (isMultitouch.current) return;
 
-  const handlePointerUp = (e: any, show: any) => {
-  activePointers.current.delete(e.pointerId); // 移出手指
+  // 2. 計算位移（只宣告一次）
+  const dx = Math.abs(e.clientX - pointerStartPos.current.x);
+  const dy = Math.abs(e.clientY - pointerStartPos.current.y);
 
-  // 💡 如果這場操作中曾經出現過兩隻手指，或是現在還有其他手指在螢幕上
-  if (isMultitouch.current) {
-    if (activePointers.current.size === 0) {
-      isMultitouch.current = false; // 所有手指都離開了，重置狀態
+  // 3. 判定是否為「顯著移動」
+  if (dx > 15 || dy > 15) {
+    hasMovedSignificant.current = true;
+    
+    // 如果正在計時長按，一旦移動就取消它
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
     }
-    return; // 這是縮放動作，不觸發點擊
+  }
+};
+
+ const handlePointerUp = (e: React.PointerEvent, show: any) => {
+  activePointers.current.delete(e.pointerId);
+
+  // 💡 核心修正：如果畫面上已經沒手指了，且剛剛沒有顯著移動，也沒觸發長按
+  // 即使 isMultitouch 是 true，只要最後一刻是乾淨的，就應該允許點擊（或至少重置狀態）
+  const wasMultitouch = isMultitouch.current;
+
+  if (activePointers.current.size === 0) {
+    isMultitouch.current = false; // 重置，為下次操作準備
   }
 
-  if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
-  if (!hasMovedSignificant.current && !isLongPress.current) { handleToggle(show); }
-};
+  if (longPressTimer.current) {
+    clearTimeout(longPressTimer.current);
+    longPressTimer.current = null;
+  }
 
+  // 只有在完全沒有多指記錄、沒有長按、沒有顯著移動的情況下才觸發 Toggle
+  if (!wasMultitouch && !isLongPress.current && !hasMovedSignificant.current) {
+    handleToggle(show);
+  }
+};
   const handlePointerCancel = () => {
     hasMovedSignificant.current = true;
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
@@ -811,9 +832,30 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
                 const endRow = Math.floor(((Number(show.end.split(':')[0]) * 60 + Number(show.end.split(':')[1])) - (12 * 60 + 30)) / 10) + 2;
                 const physicalSize = (isOverview ? 14 : 26.4) / zoom; 
                 return (
-                  <div key={show.id} onPointerDown={(e) => handlePointerDown(e, show)} onPointerMove={handlePointerMove} onPointerUp={(e) => handlePointerUp(e, show)} onPointerCancel={handlePointerCancel}
-                    className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative transition-all duration-300 select-none ${isMe && !spotlightActive ? 'shadow-2xl' : ''}`} 
-                    style={{ gridRow: `${startRow} / ${endRow}`, gridColumnStart: colIndex + 2, backgroundColor: finalBg, border: borderStyle, boxSizing: 'border-box', zIndex: (isComparedMember || (isMeSpotlight && isMe)) ? 60 : 30, opacity: opacity, filter: (spotlightActive && !isMe && !isComparedMember) ? 'brightness(0.7) grayscale(20%)' : 'none', touchAction: 'pan-y pan-x' }}>
+    <div 
+      key={show.id} 
+      onPointerDown={(e) => handlePointerDown(e, show)} 
+      onPointerMove={handlePointerMove} 
+      onPointerUp={(e) => handlePointerUp(e, show)} 
+      onPointerCancel={handlePointerCancel}
+      className={`mx-[1px] my-[1px] flex items-center justify-center text-center cursor-pointer relative transition-all duration-300 select-none ${isMe && !spotlightActive ? 'shadow-2xl' : ''}`} 
+      style={{ 
+        gridRow: `${startRow} / ${endRow}`, 
+        gridColumnStart: colIndex + 2, 
+        backgroundColor: finalBg, 
+        border: borderStyle, 
+        boxSizing: 'border-box', 
+        zIndex: (isComparedMember || (isMeSpotlight && isMe)) ? 60 : 30, 
+        opacity: opacity, 
+        filter: (spotlightActive && !isMe && !isComparedMember) ? 'brightness(0.7) grayscale(20%)' : 'none',
+        
+        // 💡 這裡是關鍵修改點：
+        touchAction: 'manipulation',      // 1. 允許手勢縮放與捲動，但禁止「雙擊縮放」，避免單擊延遲
+        userSelect: 'none',               // 2. 禁止選取文字，避免長按時出現藍色選取區塊
+        WebkitUserSelect: 'none',         // 3. iOS 版本的禁止選取文字
+        WebkitTouchCallout: 'none',       // 4. 禁止 iOS 長按時彈出系統選單（如：拷貝、查詢）
+      }}
+    >
                    
                    {/* 🛠️ 最終 Debug 資訊層：包含人數、佔比與排名 */}
 
