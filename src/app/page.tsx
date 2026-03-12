@@ -320,10 +320,10 @@ useEffect(() => {
   let initialDist = 0;
   let startZoom = 0;
 
-  const getDist = (touches) => Math.hypot(
-    touches[0].pageX - touches[1].pageX,
-    touches[0].pageY - touches[1].pageY
-  );
+  const getDist = (touches: any) => Math.hypot(
+  touches[0].pageX - touches[1].pageX,
+  touches[0].pageY - touches[1].pageY
+);
 
   const handleTouchStart = (e) => {
     if (e.touches.length === 2) {
@@ -731,7 +731,7 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
         </div>
       </div>
 
-      {/* 🗺️ 二、 大港課表主地圖 */}
+      
      {/* 🗺️ 二、 大港課表主地圖 */}
       <div 
         ref={scrollContainerRef} 
