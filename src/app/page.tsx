@@ -312,73 +312,24 @@ useEffect(() => {
     }
   }, [allSelections, email, artistSort, selectedStage]);
 
-// 在 Home 組件內新增這段手勢監聽邏輯
-useEffect(() => {
-  const el = scrollContainerRef.current;
-  if (!el) return;
-
-  let initialDist = 0;
-  let startZoom = 0;
-
-  const getDist = (touches: any) => Math.hypot(
-  touches[0].pageX - touches[1].pageX,
-  touches[0].pageY - touches[1].pageY
-);
-
-  const handleTouchStart = (e: any) => {
-    if (e.touches.length === 2) {
-      initialDist = getDist(e.touches);
-      startZoom = zoom;
-    }
-  };
-
-  const handleTouchMove = (e: any) => {
-    // 🛠️ 關鍵修復：只有在雙指操作時才阻止預設行為 (縮放)
-    if (e.touches.length === 2 && initialDist > 0) {
-      if (e.cancelable) e.preventDefault(); // 阻止原生縮放
-      
-      const newDist = getDist(e.touches);
-      const scale = newDist / initialDist;
-      
-      const nextZoom = Math.min(Math.max(startZoom * scale, 0.2), 0.8);
-      setZoom(nextZoom);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    initialDist = 0;
-  };
-
-  el.addEventListener('touchstart', handleTouchStart, { passive: false });
-  el.addEventListener('touchmove', handleTouchMove, { passive: false });
-  el.addEventListener('touchend', handleTouchEnd);
-
-  return () => {
-    el.removeEventListener('touchstart', handleTouchStart);
-    el.removeEventListener('touchmove', handleTouchMove);
-    el.removeEventListener('touchend', handleTouchEnd);
-  };
-}, [zoom]);
-
-  // 在 Home 組件內找到處理 scroll 的 useEffect，替換成這段：
-useEffect(() => {
+  useEffect(() => {
   const scrollEl = scrollContainerRef.current;
   if (!scrollEl) return;
 
   const handleScroll = () => {
-    // 💡 這裡一定要除以 zoom，否則位移量會隨縮放比例跑掉
+    // 💡 直接計算位移量並寫入 CSS 變數
     const x = scrollEl.scrollLeft / zoom;
     const y = scrollEl.scrollTop / zoom;
     scrollEl.style.setProperty('--scroll-x', `${x}px`);
     scrollEl.style.setProperty('--scroll-y', `${y}px`);
   };
 
-  // 🛠️ 修復 1：掛載時立即執行，確保 (0,0) 的初始固定值寫入 CSS 變數
+  // 🛠️ 關鍵修復：掛載後立即執行一次，確保初始位置 (0, 0) 被寫入
   handleScroll(); 
 
   scrollEl.addEventListener('scroll', handleScroll, { passive: true });
   return () => scrollEl.removeEventListener('scroll', handleScroll);
-}, [zoom, currentSquad, currentDate]); // 當切換日期或小隊，重新計算
+}, [zoom, currentSquad, currentDate]); // 💡 建議加入 currentDate，確保切換日期後也能重置
   useEffect(() => {
   setMounted(true);
   const savedEmail = localStorage.getItem('megaport_email');
@@ -730,26 +681,10 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
         </div>
       </div>
 
-      
-     {/* 🗺️ 二、 大港課表主地圖 */}
-      <div 
-        ref={scrollContainerRef} 
-        className="flex-1 overflow-auto relative bg-white no-scrollbar"
-        style={{ 
-          touchAction: 'pan-x pan-y', 
-          WebkitOverflowScrolling: 'touch'
-        }}
-      >
-        {/* 🛠️ 注意：這裡只保留「一層」縮放層 */}
-        <div style={{ 
-    transform: `scale(${zoom})`, 
-    transformOrigin: 'top left', 
-    width: `${100 / zoom}%`, 
-    height: `${100 / zoom}%`, 
-    position: 'relative' 
-  }}>
-          {/* 🛠️ inline-grid 的 touchAction 也要改為 none */}
-          <div className="inline-grid p-10 px-20 rounded-3xl" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)', touchAction: 'none', position: 'relative' }}>
+      {/* 🗺️ 二、 大港課表主地圖 */}
+     <div ref={scrollContainerRef} className="flex-1 overflow-auto relative bg-white no-scrollbar">
+        <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%`, position: 'relative' }}>
+          <div className="inline-grid p-10 px-20 rounded-3xl" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)', touchAction: 'pan-y pan-x', position: 'relative' }}>
             
             {/* 🌑 1. 智慧時間遮罩 (層級 200) */}
             {showTimeMask && maskConfig.visible && maskConfig.height > 0 && (
@@ -985,7 +920,6 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
     </div>
 
     {/* 💡 提示語區與雙開關並排 */}
-{/* 💡 提示語區與雙開關並排 */}
           <div className="w-full flex justify-between items-end pb-1 px-1">
             
             {/* 左側提示文字 */}
@@ -1049,6 +983,7 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
           </div>
   </div>
 </div>
+
       {showMembers && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex items-center justify-center p-6 text-black" onClick={() => setShowMembers(false)}>
           <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl space-y-6 relative text-black" onClick={e => e.stopPropagation()}>
