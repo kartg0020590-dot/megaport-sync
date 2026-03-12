@@ -333,14 +333,13 @@ useEffect(() => {
   };
 
   const handleTouchMove = (e: any) => {
+    // 🛠️ 關鍵修復：只有在雙指操作時才阻止預設行為 (縮放)
     if (e.touches.length === 2 && initialDist > 0) {
-      // 阻止瀏覽器原生的全網頁縮放
-      if (e.cancelable) e.preventDefault(); 
+      if (e.cancelable) e.preventDefault(); // 阻止原生縮放
       
       const newDist = getDist(e.touches);
       const scale = newDist / initialDist;
       
-      // 🛠️ 修復 2：動態更新 zoom 狀態，限制範圍在 0.2 ~ 0.8 之間
       const nextZoom = Math.min(Math.max(startZoom * scale, 0.2), 0.8);
       setZoom(nextZoom);
     }
@@ -737,18 +736,18 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
         ref={scrollContainerRef} 
         className="flex-1 overflow-auto relative bg-white no-scrollbar"
         style={{ 
-          touchAction: 'none', // 🛠️ 確保交由手勢 useEffect 接管
-          WebkitOverflowScrolling: 'touch' 
+          touchAction: 'pan-x pan-y', 
+          WebkitOverflowScrolling: 'touch'
         }}
       >
         {/* 🛠️ 注意：這裡只保留「一層」縮放層 */}
         <div style={{ 
-          transform: `scale(${zoom})`, 
-          transformOrigin: 'top left', 
-          width: `${100 / zoom}%`, 
-          height: `${100 / zoom}%`, 
-          position: 'relative' 
-        }}>
+    transform: `scale(${zoom})`, 
+    transformOrigin: 'top left', 
+    width: `${100 / zoom}%`, 
+    height: `${100 / zoom}%`, 
+    position: 'relative' 
+  }}>
           {/* 🛠️ inline-grid 的 touchAction 也要改為 none */}
           <div className="inline-grid p-10 px-20 rounded-3xl" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)', touchAction: 'none', position: 'relative' }}>
             
