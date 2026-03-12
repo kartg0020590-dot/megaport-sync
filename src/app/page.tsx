@@ -553,8 +553,7 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
     const dx = Math.abs(e.clientX - pointerStartPos.current.x);
     const dy = Math.abs(e.clientY - pointerStartPos.current.y);
 
-    // 💡 修正 2：將判定門檻從 15 提高到 25
-    // 手機點擊時手指肉墊會散開，位移通常會超過 15px，提高門檻可以大幅增加點擊成功率
+    // 💡 修正 2：判定門檻提高到 25，增加點擊成功率
     if (dx > 25 || dy > 25) {
       hasMovedSignificant.current = true;
       if (longPressTimer.current) {
@@ -569,7 +568,7 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
     
     const wasMultitouch = isMultitouch.current;
 
-    // 💡 修正 3：確保手指全部離開後重置狀態
+    // 💡 修正 3：確保狀態重置
     if (activePointers.current.size === 0) {
       isMultitouch.current = false;
     }
@@ -579,20 +578,18 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
       longPressTimer.current = null;
     }
 
-    // 💡 修正 4：放寬判定，只要當下不是長按，且位移在容許範圍內，就視為點擊
+    // 💡 修正 4：放寬判定，確保單指點擊能觸發
     if (!isLongPress.current && !hasMovedSignificant.current && !wasMultitouch) {
       handleToggle(show);
     }
   };
 
-  // 只有在完全沒有多指記錄、沒有長按、沒有顯著移動的情況下才觸發 Toggle
-  if (!wasMultitouch && !isLongPress.current && !hasMovedSignificant.current) {
-    handleToggle(show);
-  }
-};
   const handlePointerCancel = () => {
     hasMovedSignificant.current = true;
-    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   const handleMemberColorChange = async (c: string) => {
