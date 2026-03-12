@@ -325,14 +325,14 @@ useEffect(() => {
   touches[0].pageY - touches[1].pageY
 );
 
-  const handleTouchStart = (e) => {
+  const handleTouchStart = (e: any) => {
     if (e.touches.length === 2) {
       initialDist = getDist(e.touches);
       startZoom = zoom;
     }
   };
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = (e: any) => {
     if (e.touches.length === 2 && initialDist > 0) {
       // 阻止瀏覽器原生的全網頁縮放
       if (e.cancelable) e.preventDefault(); 
