@@ -682,10 +682,34 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
       </div>
 
       {/* 🗺️ 二、 大港課表主地圖 */}
-     <div ref={scrollContainerRef} className="flex-1 overflow-auto relative bg-white no-scrollbar">
-        <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%`, position: 'relative' }}>
-          <div className="inline-grid p-10 px-20 rounded-3xl" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)', touchAction: 'pan-y pan-x', position: 'relative' }}>
-            
+      <div 
+        ref={scrollContainerRef} 
+        className="flex-1 overflow-auto relative bg-white no-scrollbar"
+        style={{ 
+          touchAction: 'auto', // 恢復手機滑動
+          WebkitOverflowScrolling: 'touch' 
+        }}
+      >
+        <div style={{ 
+          transform: `scale(${zoom})`, 
+          transformOrigin: 'top left', 
+          width: `${100 / zoom}%`, 
+          // 🛠️ 修改高度：將原本的 ${100 / zoom}% 改為固定高度
+          // 表格約 2645px，1.5 倍大約是 4000px
+          height: '1050px', 
+          position: 'relative' 
+        }}>
+          {/* 內部直接接 inline-grid */}
+          <div className="inline-grid p-10 px-20 rounded-3xl" style={{ 
+            display: 'grid', 
+            gridTemplateColumns: `100px repeat(10, 200px) 100px`, 
+            gridTemplateRows: `80px repeat(57, 45px)`, 
+            minWidth: '2200px', 
+            backgroundColor: '#FFFFFF', 
+            border: '2px solid rgba(0,0,0,0.2)', 
+            touchAction: 'auto', 
+            position: 'relative' 
+          }}>
             {/* 🌑 1. 智慧時間遮罩 (層級 200) */}
             {showTimeMask && maskConfig.visible && maskConfig.height > 0 && (
               <div style={{
