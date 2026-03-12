@@ -564,13 +564,18 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
   };
 
   const handlePointerUp = (e: React.PointerEvent, show: any) => {
+    // 1. 先移除目前這隻手指
     activePointers.current.delete(e.pointerId);
     
     const wasMultitouch = isMultitouch.current;
+    const wasLongPress = isLongPress.current;
+    const wasMoved = hasMovedSignificant.current;
 
-    // 💡 修正 3：確保狀態重置
+    // 💡 關鍵保險：如果目前的集合已經空了，或者這是觸控點的最後一次事件
+    // 強制重置所有狀態，確保下一次點擊是全新的開始
     if (activePointers.current.size === 0) {
       isMultitouch.current = false;
+      // 這裡不需要重置 hasMovedSignificant，因為它是給這次判定用的
     }
 
     if (longPressTimer.current) {
@@ -578,14 +583,17 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
       longPressTimer.current = null;
     }
 
-    // 💡 修正 4：放寬判定，確保單指點擊能觸發
-    if (!isLongPress.current && !hasMovedSignificant.current && !wasMultitouch) {
+    // 2. 只有在「完全乾淨」的單指狀態下才執行選取
+    // 我們同時檢查 activePointers 的大小，確保真的沒人在螢幕上了
+    if (!wasMultitouch && !wasLongPress && !wasMoved && activePointers.current.size === 0) {
       handleToggle(show);
     }
   };
 
-  const handlePointerCancel = () => {
-    hasMovedSignificant.current = true;
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    activePointers.current.clear(); // 直接清空所有手指紀錄
+    isMultitouch.current = false;
+    hasMovedSignificant.current = false;
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
