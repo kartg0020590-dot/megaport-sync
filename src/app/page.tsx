@@ -312,24 +312,74 @@ useEffect(() => {
     }
   }, [allSelections, email, artistSort, selectedStage]);
 
-  useEffect(() => {
+// 在 Home 組件內新增這段手勢監聽邏輯
+useEffect(() => {
+  const el = scrollContainerRef.current;
+  if (!el) return;
+
+  let initialDist = 0;
+  let startZoom = 0;
+
+  const getDist = (touches) => Math.hypot(
+    touches[0].pageX - touches[1].pageX,
+    touches[0].pageY - touches[1].pageY
+  );
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      initialDist = getDist(e.touches);
+      startZoom = zoom;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2 && initialDist > 0) {
+      // 阻止瀏覽器原生的全網頁縮放
+      if (e.cancelable) e.preventDefault(); 
+      
+      const newDist = getDist(e.touches);
+      const scale = newDist / initialDist;
+      
+      // 🛠️ 修復 2：動態更新 zoom 狀態，限制範圍在 0.2 ~ 0.8 之間
+      const nextZoom = Math.min(Math.max(startZoom * scale, 0.2), 0.8);
+      setZoom(nextZoom);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    initialDist = 0;
+  };
+
+  el.addEventListener('touchstart', handleTouchStart, { passive: false });
+  el.addEventListener('touchmove', handleTouchMove, { passive: false });
+  el.addEventListener('touchend', handleTouchEnd);
+
+  return () => {
+    el.removeEventListener('touchstart', handleTouchStart);
+    el.removeEventListener('touchmove', handleTouchMove);
+    el.removeEventListener('touchend', handleTouchEnd);
+  };
+}, [zoom]);
+
+  // 在 Home 組件內找到處理 scroll 的 useEffect，替換成這段：
+useEffect(() => {
   const scrollEl = scrollContainerRef.current;
   if (!scrollEl) return;
 
   const handleScroll = () => {
-    // 💡 直接計算位移量並寫入 CSS 變數
+    // 💡 這裡一定要除以 zoom，否則位移量會隨縮放比例跑掉
     const x = scrollEl.scrollLeft / zoom;
     const y = scrollEl.scrollTop / zoom;
     scrollEl.style.setProperty('--scroll-x', `${x}px`);
     scrollEl.style.setProperty('--scroll-y', `${y}px`);
   };
 
-  // 🛠️ 關鍵修復：掛載後立即執行一次，確保初始位置 (0, 0) 被寫入
+  // 🛠️ 修復 1：掛載時立即執行，確保 (0,0) 的初始固定值寫入 CSS 變數
   handleScroll(); 
 
   scrollEl.addEventListener('scroll', handleScroll, { passive: true });
   return () => scrollEl.removeEventListener('scroll', handleScroll);
-}, [zoom, currentSquad, currentDate]); // 💡 建議加入 currentDate，確保切換日期後也能重置
+}, [zoom, currentSquad, currentDate]); // 當切換日期或小隊，重新計算
   useEffect(() => {
   setMounted(true);
   const savedEmail = localStorage.getItem('megaport_email');
@@ -682,9 +732,25 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
       </div>
 
       {/* 🗺️ 二、 大港課表主地圖 */}
-     <div ref={scrollContainerRef} className="flex-1 overflow-auto relative bg-white no-scrollbar">
-        <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%`, position: 'relative' }}>
-          <div className="inline-grid p-10 px-20 rounded-3xl" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)', touchAction: 'pan-y pan-x', position: 'relative' }}>
+     {/* 🗺️ 二、 大港課表主地圖 */}
+      <div 
+        ref={scrollContainerRef} 
+        className="flex-1 overflow-auto relative bg-white no-scrollbar"
+        style={{ 
+          touchAction: 'none', // 🛠️ 確保交由手勢 useEffect 接管
+          WebkitOverflowScrolling: 'touch' 
+        }}
+      >
+        {/* 🛠️ 注意：這裡只保留「一層」縮放層 */}
+        <div style={{ 
+          transform: `scale(${zoom})`, 
+          transformOrigin: 'top left', 
+          width: `${100 / zoom}%`, 
+          height: `${100 / zoom}%`, 
+          position: 'relative' 
+        }}>
+          {/* 🛠️ inline-grid 的 touchAction 也要改為 none */}
+          <div className="inline-grid p-10 px-20 rounded-3xl" style={{ display: 'grid', gridTemplateColumns: `100px repeat(10, 200px) 100px`, gridTemplateRows: `80px repeat(57, 45px)`, minWidth: '2200px', backgroundColor: '#FFFFFF', border: '2px solid rgba(0,0,0,0.2)', touchAction: 'none', position: 'relative' }}>
             
             {/* 🌑 1. 智慧時間遮罩 (層級 200) */}
             {showTimeMask && maskConfig.visible && maskConfig.height > 0 && (
@@ -920,67 +986,68 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
     </div>
 
     {/* 💡 提示語區與雙開關並排 */}
-<div className="w-full flex justify-between items-end pb-1 px-1">
-  
-  {/* 左側提示文字 */}
-  <div className="flex flex-col text-zinc-400 font-bold italic leading-tight text-left">
-    <span className="text-[8px]">💡 人氣功能僅供參考，遮罩功能3/21啟用</span>
-  </div>
-  
-  {/* 右側：統一的開關膠囊容器 */}
-  <div className="flex flex-row items-center gap-4 bg-zinc-100/80 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-zinc-200 shadow-sm">
-    {/* 🔥 熱度開關 */}
-    <div className="flex items-center gap-1.5">
-      <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter whitespace-nowrap">人氣</span>
-      <button 
-        onClick={() => {
-          const nextHeatState = !showHeatMap;
-          setShowHeatMap(nextHeatState);
-          localStorage.setItem('megaport_show_heat', String(nextHeatState));
-        }}
-        className={`w-6 h-3.5 rounded-full transition-all relative shrink-0 ${showHeatMap ? 'bg-[#FF4500]' : 'bg-zinc-300'}`}
-      >
-        <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showHeatMap ? 'left-3.5' : 'left-0.5'}`} />
-      </button>
-    </div>
+{/* 💡 提示語區與雙開關並排 */}
+          <div className="w-full flex justify-between items-end pb-1 px-1">
+            
+            {/* 左側提示文字 */}
+            <div className="flex flex-col text-zinc-400 font-bold italic leading-tight text-left">
+              <span className="text-[8px]">💡 人氣功能僅供參考，遮罩功能3/21啟用</span>
+            </div>
+            
+            {/* 右側：統一的開關膠囊容器 */}
+            <div className="flex flex-row items-center gap-4 bg-zinc-100/80 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-zinc-200 shadow-sm">
+              {/* 🔥 人氣開關 */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter whitespace-nowrap">人氣</span>
+                <button 
+                  onClick={() => {
+                    const nextHeatState = !showHeatMap;
+                    setShowHeatMap(nextHeatState);
+                    localStorage.setItem('megaport_show_heat', String(nextHeatState));
+                  }}
+                  // 🛠️ 修改：人氣開關啟用時變黃色 (大港金 #FAD390)
+                  className={`w-6 h-3.5 rounded-full transition-all relative shrink-0 ${showHeatMap ? 'bg-[#FAD390]' : 'bg-zinc-300'}`}
+                >
+                  <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showHeatMap ? 'left-3.5' : 'left-0.5'}`} />
+                </button>
+              </div>
 
-    <div className="w-[1px] h-3 bg-zinc-300"></div>
-    {/* 🌑 遮罩開關 */}
-<div className="flex items-center gap-1.5">
-  <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter whitespace-nowrap">遮罩</span>
-  <button 
-    onClick={() => {
-      const nextMaskState = !showTimeMask;
-      setShowTimeMask(nextMaskState);
-      // 💡 同步儲存到本地紀錄
-      localStorage.setItem('megaport_show_mask', String(nextMaskState));
-    }}
-    className={`w-6 h-3.5 rounded-full transition-all relative shrink-0 ${showTimeMask ? 'bg-black' : 'bg-zinc-300'}`}
-  >
-    <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showTimeMask ? 'left-3.5' : 'left-0.5'}`} />
-  </button>
-</div>
+              <div className="w-[1px] h-3 bg-zinc-300"></div>
+              {/* 🌑 遮罩開關 */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter whitespace-nowrap">遮罩</span>
+                <button 
+                  onClick={() => {
+                    const nextMaskState = !showTimeMask;
+                    setShowTimeMask(nextMaskState);
+                    // 💡 同步儲存到本地紀錄
+                    localStorage.setItem('megaport_show_mask', String(nextMaskState));
+                  }}
+                  // 🛠️ 修改：遮罩開關啟用時變灰色 (灰 #A1A1AA)
+                  className={`w-6 h-3.5 rounded-full transition-all relative shrink-0 ${showTimeMask ? 'bg-[#A1A1AA]' : 'bg-zinc-300'}`}
+                >
+                  <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showTimeMask ? 'left-3.5' : 'left-0.5'}`} />
+                </button>
+              </div>
 
-    {/* 分隔線 (可選，讓視覺更精緻) */}
-    <div className="w-[1px] h-3 bg-zinc-300"></div>
-
-    {/* 🎨 隊友開關 */}
-    <div className="flex items-center gap-1.5">
-      <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter whitespace-nowrap">隊友</span>
-      <button 
-        onClick={() => {
-          const nextState = !showGridIcons;
-          setShowGridIcons(nextState);
-          localStorage.setItem('megaport_show_icons', String(nextState));
-        }}
-        className={`w-6 h-3.5 rounded-full transition-all relative shrink-0 ${showGridIcons ? 'bg-[#E85427]' : 'bg-zinc-300'}`}
-      >
-        <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showGridIcons ? 'left-3.5' : 'left-0.5'}`} />
-      </button>
-    </div>
-
-  </div> 
-</div>
+              <div className="w-[1px] h-3 bg-zinc-300"></div>
+              {/* 🎨 隊友開關 */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter whitespace-nowrap">隊友</span>
+                <button 
+                  onClick={() => {
+                    const nextState = !showGridIcons;
+                    setShowGridIcons(nextState);
+                    localStorage.setItem('megaport_show_icons', String(nextState));
+                  }}
+                  // 🛠️ 修改這裡是 #FF7F50 (珊瑚橘)，比原本的 #E85427 淺一點
+                  className={`w-6 h-3.5 rounded-full transition-all relative shrink-0 ${showGridIcons ? 'bg-[#FF7F50]' : 'bg-zinc-300'}`}
+                >
+                  <div className={`w-2 h-2 bg-white rounded-full absolute top-0.5 transition-all ${showGridIcons ? 'left-3.5' : 'left-0.5'}`} />
+                </button>
+              </div>
+            </div> 
+          </div>
   </div>
 </div>
       {showMembers && (
