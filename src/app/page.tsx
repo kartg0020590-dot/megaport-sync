@@ -518,7 +518,7 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
     }
   };
 
- const handlePointerDown = (e: React.PointerEvent, show: any) => {
+const handlePointerDown = (e: React.PointerEvent, show: any) => {
     activePointers.current.add(e.pointerId);
 
     // 💡 修正 1：只要回到單指，就重新給予點擊機會
@@ -584,42 +584,6 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
       handleToggle(show);
     }
   };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-  // 1. 如果已經是多指模式（縮放中），直接結束，不處理後續位移判定
-  if (isMultitouch.current) return;
-
-  // 2. 計算位移（只宣告一次）
-  const dx = Math.abs(e.clientX - pointerStartPos.current.x);
-  const dy = Math.abs(e.clientY - pointerStartPos.current.y);
-
-  // 3. 判定是否為「顯著移動」
-  if (dx > 15 || dy > 15) {
-    hasMovedSignificant.current = true;
-    
-    // 如果正在計時長按，一旦移動就取消它
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }
-};
-
- const handlePointerUp = (e: React.PointerEvent, show: any) => {
-  activePointers.current.delete(e.pointerId);
-
-  // 💡 核心修正：如果畫面上已經沒手指了，且剛剛沒有顯著移動，也沒觸發長按
-  // 即使 isMultitouch 是 true，只要最後一刻是乾淨的，就應該允許點擊（或至少重置狀態）
-  const wasMultitouch = isMultitouch.current;
-
-  if (activePointers.current.size === 0) {
-    isMultitouch.current = false; // 重置，為下次操作準備
-  }
-
-  if (longPressTimer.current) {
-    clearTimeout(longPressTimer.current);
-    longPressTimer.current = null;
-  }
 
   // 只有在完全沒有多指記錄、沒有長按、沒有顯著移動的情況下才觸發 Toggle
   if (!wasMultitouch && !isLongPress.current && !hasMovedSignificant.current) {
