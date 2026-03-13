@@ -997,7 +997,9 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
         <button key={i} onClick={() => setCompareMemberEmail(compareMemberEmail === m.user_email ? null : m.user_email)}
           className={`flex items-center justify-center px-3 py-1.5 rounded-full border-2 transition-all shrink-0 active:scale-95 text-white ${compareMemberEmail === m.user_email ? 'ring-2 ring-black ring-offset-1 scale-105' : 'border-black/5'}`}
           style={{ backgroundColor: m.user_color, color: '#FFFFFF', borderColor: '#000000' }}>
-          <span className="text-[8px] font-black uppercase tracking-tight whitespace-nowrap">{m.user_name} {m.user_email === email && "(我)"}</span>
+          <span className="text-[10px] font-black tracking-normal whitespace-nowrap">
+  {m.user_name} {m.user_email === email && "(我)"}
+</span>
         </button>
       ))}
     </div>
