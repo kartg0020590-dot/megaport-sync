@@ -1152,7 +1152,7 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
         </div>
       )}
       {/* 🎨 加入作者簽名水印 (固定在左下角，Footer 上方) */}
-      <div className="fixed bottom-[90px] right-4 z-[550] pointer-events-none select-none">
+      <div className="fixed bottom-[92px] right-4 z-[550] pointer-events-none select-none">
         <span className="text-[4px] font-black text-zinc-400 opacity-40 uppercase tracking-widest font-mono">
           made by @yuanchou1107
         </span>
