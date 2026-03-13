@@ -1000,11 +1000,11 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
       )}
 
     {/* 💡 三、底部懸浮主控台 */}
-<div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-zinc-200 z-[500] px-4 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] text-black">
+<div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-zinc-200 z-[500] px-0 py-0 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] text-black">
   <div className="w-full flex flex-col items-start mx-auto" style={{ maxWidth: 'min(100vw, 2200px)' }}>
     
     {/* 隊友按鈕列 */}
-    <div className="w-full flex flex-nowrap overflow-x-auto no-scrollbar justify-start items-center gap-2 py-2">
+    <div className="w-full flex flex-nowrap overflow-x-auto no-scrollbar justify-start items-center gap-2 px-2 py-2">
       {sortedMemberList.map((m, i) => (
         <button key={i} onClick={() => setCompareMemberEmail(compareMemberEmail === m.user_email ? null : m.user_email)}
           className={`flex items-center justify-center px-3 py-1.5 rounded-full border-2 transition-all shrink-0 active:scale-95 text-white ${compareMemberEmail === m.user_email ? 'ring-2 ring-black ring-offset-1 scale-105' : 'border-black/5'}`}
@@ -1020,10 +1020,10 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
           <div className="w-full flex justify-between items-end pb-1 px-1">
             
             {/* 左側提示文字 */}
-            <div className="flex flex-col text-[8px] leading-tight text-zinc-400 font-bold italic text-left">
-              <span>{currentHint[0]}</span>
-              <span>{currentHint[1]}</span>
-            </div>
+<div className="flex flex-col text-[8px] leading-tight text-zinc-400 font-bold italic text-left mb-[5px] pl-1">
+  <span>{currentHint[0]}</span>
+  <span>{currentHint[1]}</span>
+</div>
             
             {/* 右側：統一的開關膠囊容器 */}
             <div className="flex flex-row items-center gap-4 bg-zinc-100/80 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-zinc-200 shadow-sm">
