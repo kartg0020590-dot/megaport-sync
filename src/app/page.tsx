@@ -145,6 +145,15 @@ export default function Home() {
   const isLongPress = useRef(false);
 const activePointers = useRef(new Set()); // 紀錄目前在螢幕上的手指 ID
 const isMultitouch = useRef(false);       // 標記這一次操作是否曾經出現過多指
+// 💡 1. 在組件最上方定義隨機提示語 (約第 135 行)
+  const FOOTER_HINTS = [
+    ["💡 按左上角回清單，加入/創立小隊", "🔔 遮罩功能 3/21 啟用"],
+    ["💡 長按表演項目查看詳細隊友名單", "🔔 遮罩功能 3/21 啟用"],
+    ["💡 點擊右上角「生成桌布」，設定手機桌面快速查看團序", "🔔 遮罩功能 3/21 啟用"],
+    ["💡 點擊成員框框對比團序", "🔔 遮罩功能 3/21 啟用"],
+    ["💡 點擊右上角COLOR，設定代表顏色", "🔔 遮罩功能 3/21 啟用"],
+    ["💡 人氣火苗依據同時段勾選比例計算，建議即早準備", "🔔 遮罩功能 3/21 啟用"]
+  ];
 
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -186,6 +195,7 @@ const [now, setNow] = useState(new Date());
 
 // 在 Home 組件內新增這個 state (如果還沒加)
 const [randomQuote, setRandomQuote] = useState("");
+const [currentHint, setCurrentHint] = useState(["💡 載入中...", ""]);
 
 useEffect(() => {
   // 每次組件掛載（點進去）時隨機挑選一句
@@ -193,6 +203,8 @@ useEffect(() => {
     const randomIndex = Math.floor(Math.random() * quotesData.length);
     setRandomQuote(quotesData[randomIndex]);
   }
+  setCurrentHint(FOOTER_HINTS[Math.floor(Math.random() * FOOTER_HINTS.length)]);
+  
 }, []);
 
   // 💡 定時每分鐘更新一次時間
@@ -1008,8 +1020,9 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
           <div className="w-full flex justify-between items-end pb-1 px-1">
             
             {/* 左側提示文字 */}
-            <div className="flex flex-col text-zinc-400 font-bold italic leading-tight text-left">
-              <span className="text-[8px]">💡 人氣功能僅供參考，遮罩功能3/21啟用</span>
+            <div className="flex flex-col text-[8px] leading-tight text-zinc-400 font-bold italic text-left">
+              <span>{currentHint[0]}</span>
+              <span>{currentHint[1]}</span>
             </div>
             
             {/* 右側：統一的開關膠囊容器 */}
