@@ -893,7 +893,7 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
                       <div className={`absolute bottom-1 left-2 max-w-[90%] flex flex-row pointer-events-none overflow-hidden ${isOverview ? '-space-x-3' : '-space-x-1.5'}`}>
                         {attendees.map((f, i) => {
                           const m = memberList.find(ml => ml.user_email === f.user_email);
-                          return ( <div key={i} className="rounded-full flex items-center justify-center font-black text-white border border-black shadow-sm" style={{ backgroundColor: m?.user_color || '#000', width: `${physicalSize}px`, height: `${physicalSize}px`, fontSize: `${physicalSize * 0.45}px`, zIndex: attendees.length - i }}>{(m?.user_name || f.user_name || '?').charAt(0).toUpperCase()}</div> );
+                          return ( <div key={i} className="rounded-full flex items-center justify-center font-black text-white border border-black shadow-sm" style={{ backgroundColor: m?.user_color || '#000', width: `${physicalSize}px`, height: `${physicalSize}px`, fontSize: `${physicalSize * 0.45}px`, zIndex: attendees.length - i }}>{(m?.user_name || f.user_name || '?').charAt(0)}</div> );
                         })}
                       </div>
                     )}
@@ -976,7 +976,7 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
                     <div className="flex -space-x-2">
                       {show.attendees.map((attendee: any, idx: number) => {
                         const m = memberList.find(ml => ml.user_email === attendee.user_email);
-                        return ( <div key={idx} className="w-6 h-6 rounded-full border border-white flex items-center justify-center font-black text-white text-[8px] shadow-sm" style={{ backgroundColor: m?.user_color || '#000', zIndex: 10 - idx }}>{(m?.user_name || attendee.user_name || '?').charAt(0).toUpperCase()}</div> );
+                        return ( <div key={idx} className="w-6 h-6 rounded-full border border-white flex items-center justify-center font-black text-white text-[8px] shadow-sm" style={{ backgroundColor: m?.user_color || '#000', zIndex: 10 - idx }}>{(m?.user_name || attendee.user_name || '?').charAt(0)}</div> );
                       })}
                     </div>
                   </div>
@@ -1084,7 +1084,7 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
               {memberList.map((m, i) => (
                 <div key={i} onClick={() => { if(m.user_email !== email) { setCompareMemberEmail(m.user_email === compareMemberEmail ? null : m.user_email); setShowMembers(false); } }} 
                   className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${m.user_email === compareMemberEmail ? 'bg-[#E85427] border-[#E85427] text-white shadow-lg' : 'bg-zinc-50 border-zinc-100 hover:border-zinc-300'}`}>
-                   <div className="flex items-center gap-3 text-black"><div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-sm text-white" style={{ backgroundColor: m.user_color }}>{m.user_name?.charAt(0).toUpperCase()}</div><span className={`font-bold text-sm ${m.user_email === compareMemberEmail ? 'text-white' : 'text-black'}`}>{m.user_name} {m.user_email === email && "(我)"}</span></div>
+                   <div className="flex items-center gap-3 text-black"><div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-sm text-white" style={{ backgroundColor: m.user_color }}>{m.user_name?.charAt(0)}</div><span className={`font-bold text-sm ${m.user_email === compareMemberEmail ? 'text-white' : 'text-black'}`}>{m.user_name} {m.user_email === email && "(我)"}</span></div>
                 </div>
               ))}
             </div>
@@ -1139,7 +1139,7 @@ const handlePointerDown = (e: React.PointerEvent, show: any) => {
                   const m = memberList.find(ml => ml.user_email === attendee.user_email);
                   return (
                     <div key={idx} onClick={() => { if(attendee.user_email !== email) { setCompareMemberEmail(attendee.user_email === compareMemberEmail ? null : attendee.user_email); setDetailShow(null); } }} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all ${attendee.user_email === compareMemberEmail ? 'bg-[#E85427] text-white shadow-md' : ''}`}>
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-[10px] shadow-sm" style={{ backgroundColor: m?.user_color || '#000' }}>{(m?.user_name || attendee.user_name || '?').charAt(0).toUpperCase()}</div><span className={`font-bold text-sm ${attendee.user_email === compareMemberEmail ? 'text-white' : 'text-black'}`}>{m?.user_name || attendee.user_name}</span>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-[10px] shadow-sm" style={{ backgroundColor: m?.user_color || '#000' }}>{(m?.user_name || attendee.user_name || '?').charAt(0)}</div><span className={`font-bold text-sm ${attendee.user_email === compareMemberEmail ? 'text-white' : 'text-black'}`}>{m?.user_name || attendee.user_name}</span>
                     </div>
                   );
                 })}
