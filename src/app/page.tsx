@@ -407,12 +407,56 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
     }
   };
 
-  const handleToggle = async (show: any) => {
+  const handleToggle = async (show) => {
     if (!email) return;
+
+    // 1. 紀錄舊的狀態（萬一網路真的斷了，可以復原）
+    const previousSelections = [...allSelections];
+
+    // 2. 判斷現在是「要加入」還是「要刪除」
     const mine = allSelections.find(s => s.user_email === email && String(s.performance_id) === String(show.id));
-    if (mine) { await supabase.from('user_selections').delete().eq('id', mine.id); } 
-    else { await supabase.from('user_selections').insert([{ user_email: email, user_name: userName, performance_id: String(show.id), artist_name: show.artist }]); }
-    fetchSelections();
+
+    // 💡 3. 樂觀更新：立刻修改 UI
+    if (mine) {
+      // 如果原本有選，立刻從畫面上移除
+      setAllSelections(prev => prev.filter(s => s.performance_id !== String(show.id) || s.user_email !== email));
+    } else {
+      // 如果原本沒選，立刻在畫面上新增一個暫時的選取物件
+      const tempSelection = { 
+        id: `temp-${Date.now()}`, // 暫時的 ID
+        user_email: email, 
+        user_name: userName, 
+        performance_id: String(show.id), 
+        artist_name: show.artist 
+      };
+      setAllSelections(prev => [...prev, tempSelection]);
+    }
+
+    // 4. 背景執行資料庫請求 (不使用 await 擋住 UI)
+    try {
+      if (mine) {
+        const { error } = await supabase.from('user_selections').delete().eq('id', mine.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('user_selections').insert([{ 
+          user_email: email, 
+          user_name: userName, 
+          performance_id: String(show.id), 
+          artist_name: show.artist 
+        }]);
+        if (error) throw error;
+      }
+      
+      // ✅ 成功後默默更新
+      fetchSelections(); 
+    } catch (err) {
+      // ❌ 發生錯誤時，我們保留 console 紀錄供開發檢查
+      console.error("同步失敗（已靜默處理）:", err);
+
+      // 💡 這裡把 alert 刪掉了
+      // 畫面會因為下面這行自動回滾到點擊前的狀態，這就是最好的「失敗提醒」
+      setAllSelections(previousSelections);
+    }
   };
 
   const fetchGlobalHeat = async () => {
