@@ -463,6 +463,54 @@ const handleToggle = async (show: any) => {
     }
   };
 
+  // 💡 在原本 handleToggle 結束的第 368 行下方插入
+  async function syncLocalToCloud() {
+    if (!email || !currentSquad) return;
+    console.log("🔄 開始暴力同步：以手機本地資料為準...");
+
+    try {
+      // 1. 先抓取目前雲端上「我」的所有選擇，用來做對照
+      const { data: cloudSelections } = await supabase
+        .from('user_selections')
+        .select('*')
+        .eq('user_email', email);
+
+      if (!cloudSelections) return;
+
+      // 2. 找出【手機有，但雲端沒有】的 -> 代表離線時勾選的，需要補存入雲端
+      const toAdd = allSelections.filter(local => 
+        local.user_email === email && 
+        !cloudSelections.some(cloud => String(cloud.performance_id) === String(local.performance_id))
+      );
+
+      // 3. 找出【雲端有，但手機沒有】的 -> 代表離線時取消的，需要從雲端刪除
+      const toDelete = cloudSelections.filter(cloud => 
+        !allSelections.some(local => 
+          local.user_email === email && String(local.performance_id) === String(cloud.performance_id)
+        )
+      );
+
+      // 4. 執行雲端更新
+      if (toAdd.length > 0) {
+        // 移除本地暫時的 temp ID，讓資料庫生成正式 ID
+        const cleanAdds = toAdd.map(({ id, ...rest }) => rest); 
+        await supabase.from('user_selections').insert(cleanAdds);
+      }
+
+      if (toDelete.length > 0) {
+        const deleteIds = toDelete.map(d => d.id);
+        await supabase.from('user_selections').delete().in('id', deleteIds);
+      }
+
+      console.log(`✅ 同步完成！新增了 ${toAdd.length} 筆，刪除了 ${toDelete.length} 筆。`);
+      
+      // 最後刷新一次畫面，確保 ID 都是資料庫最新的
+      fetchSelections(); 
+    } catch (err) {
+      console.error("❌ 暴力同步失敗:", err);
+    }
+  }
+
   const fetchGlobalHeat = async () => {
     try {
       console.log("🚀 啟動熱度運算 (排名制 + 總註冊人數 3% 門檻)...");
