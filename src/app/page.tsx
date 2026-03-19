@@ -363,35 +363,50 @@ useEffect(() => {
   scrollEl.addEventListener('scroll', handleScroll, { passive: true });
   return () => scrollEl.removeEventListener('scroll', handleScroll);
 }, [zoom, currentSquad, currentDate]); // 💡 建議加入 currentDate，確保切換日期後也能重置
-  useEffect(() => {
-  setMounted(true);
-  const savedOffline = localStorage.getItem('megaport_offline_selections');
+useEffect(() => {
+    setMounted(true);
+
+    // 1. 讀取離線緩存
+    const savedOffline = localStorage.getItem('megaport_offline_selections');
     if (savedOffline) setAllSelections(JSON.parse(savedOffline));
-  const savedEmail = localStorage.getItem('megaport_email');
-  const savedSquadId = localStorage.getItem('megaport_squad_id');
-  const savedDate = localStorage.getItem('megaport_current_date');
-  const savedIconPreference = localStorage.getItem('megaport_show_icons');
-const savedHeatPreference = localStorage.getItem('megaport_show_heat');
-    if (savedHeatPreference !== null) setShowHeatMap(savedHeatPreference === 'true');
 
-  // 💡 新增：讀取遮罩偏好 (預設為 true)
-  const savedMaskPreference = localStorage.getItem('megaport_show_mask');
-  if (savedMaskPreference !== null) {
-    setShowTimeMask(savedMaskPreference === 'true');
-  }
+    // 2. 優先抓取網址列的邀請碼
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get('invite');
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const codeFromUrl = urlParams.get('invite');
-  if (codeFromUrl) setInviteCode(codeFromUrl);
-
-  if (savedDate) setCurrentDate(savedDate);
-  if (savedIconPreference !== null) setShowGridIcons(savedIconPreference === 'true');
-  if (savedEmail) { 
-      setEmail(savedEmail); 
-      fetchMySquads(savedEmail, savedSquadId); 
-      fetchGlobalHeat(); // 💡 登入後立刻抓取全球熱度
+    if (codeFromUrl) {
+      setInviteCode(codeFromUrl);
+      // 💡 修正問題一：清理網址列，讓網址恢復乾淨 (例如變成 domain.com/)
+      // 這樣使用者重新整理時，不會一直帶住邀請碼，也會知道他可以加入別的隊
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      window.history.replaceState({ path: newUrl }, '', newUrl);
     }
-}, []);
+
+    // 3. 處理登入與自動進入小隊邏輯
+    const savedEmail = localStorage.getItem('megaport_email');
+    const savedSquadId = localStorage.getItem('megaport_squad_id');
+    const savedDate = localStorage.getItem('megaport_current_date');
+    const savedIconPreference = localStorage.getItem('megaport_show_icons');
+    const savedHeatPreference = localStorage.getItem('megaport_show_heat');
+
+    if (savedHeatPreference !== null) setShowHeatMap(savedHeatPreference === 'true');
+    if (savedDate) setCurrentDate(savedDate);
+    if (savedIconPreference !== null) setShowGridIcons(savedIconPreference === 'true');
+
+    if (savedEmail) {
+      setEmail(savedEmail);
+      
+      // 💡 修正問題二：邀請碼優先邏輯
+      // 如果網址有邀請碼，我們「只登入」但不「自動進入舊小隊」，讓使用者停留在邀請碼輸入頁面
+      if (codeFromUrl) {
+        fetchMySquads(savedEmail, null); // 第二個參數傳 null，強制停留在清單頁
+      } else {
+        fetchMySquads(savedEmail, savedSquadId); // 正常狀態才進入上次使用的小隊
+      }
+      
+      fetchGlobalHeat();
+    }
+  }, []);
 
 useEffect(() => {
     if (mounted) {
