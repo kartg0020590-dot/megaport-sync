@@ -407,7 +407,7 @@ const savedHeatPreference = localStorage.getItem('megaport_show_heat');
     }
   };
 
-  const handleToggle = async (show) => {
+  const handleToggle = async (show: any) => {
     if (!email) return;
 
     // 1. 紀錄舊的狀態（萬一網路真的斷了，可以復原）
